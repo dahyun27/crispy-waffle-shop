@@ -7,10 +7,30 @@ import 'package:flutter/services.dart';
 enum Haptic { light, medium, heavy, tick }
 
 class Sfx {
-  Sfx({this.enabled = true});
+  Sfx({int volumeLevel = defaultVolumeLevel, this.haptics = true})
+      : volumeLevel = volumeLevel.clamp(0, maxVolumeLevel);
 
-  /// 소리와 진동을 함께 켜고 끈다.
-  bool enabled;
+  static const maxVolumeLevel = 5;
+  static const defaultVolumeLevel = 3;
+
+  /// 소리 크기 단계(0 = 끔, 5 = 최대).
+  int volumeLevel;
+
+  /// 진동 사용 여부.
+  bool haptics;
+
+  /// 음소거를 풀 때 돌아갈 단계.
+  int _lastLevel = defaultVolumeLevel;
+
+  bool get muted => volumeLevel == 0;
+
+  void setVolumeLevel(int level) {
+    volumeLevel = level.clamp(0, maxVolumeLevel);
+    if (volumeLevel > 0) _lastLevel = volumeLevel;
+  }
+
+  /// 스피커 아이콘을 눌렀을 때: 끄거나, 끄기 전 크기로 되돌린다.
+  void toggleMute() => setVolumeLevel(muted ? _lastLevel : 0);
 
   static const names = [
     'click', 'pour', 'early', 'good', 'topping', 'serve', 'bonus', 'burnt', 'full', 'lost',
@@ -25,8 +45,10 @@ class Sfx {
     } catch (_) {}
   }
 
-  void play(String name, {double volume = 0.6}) {
-    if (!enabled) return;
+  /// [volume] 은 이 소리만의 상대 크기(0~1). 실제 크기는 여기에 전체 음량 단계가 곱해진다.
+  void play(String name, {double volume = 1.0}) {
+    if (muted) return;
+    volume = volume * volumeLevel / maxVolumeLevel;
     // 소리를 낼 수 없는 환경(테스트, 자동재생 차단 등)에서도 조용히 넘어간다.
     try {
       FlameAudio.play('$name.wav', volume: volume).catchError((Object _) => AudioPlayer());
@@ -37,7 +59,7 @@ class Sfx {
   void perfect(int combo) => play('perfect${(combo - 1).clamp(0, 5)}');
 
   void haptic(Haptic kind) {
-    if (!enabled) return;
+    if (!haptics) return;
     switch (kind) {
       case Haptic.light:
         HapticFeedback.lightImpact();

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:crispy_waffle_shop/game/config.dart';
 import 'package:crispy_waffle_shop/game/progress.dart';
 import 'package:crispy_waffle_shop/game/session.dart';
+import 'package:crispy_waffle_shop/game/sfx.dart';
 import 'package:crispy_waffle_shop/game/sprites.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -196,6 +197,19 @@ void main() {
     }
     expect(Balance.goalForDay(1), 150);
     expect(Balance.goalForDay(100), Balance.goalAnchors.last.$2);
+  });
+
+  test('소리 설정: 크기 단계, 음소거와 되돌리기, 진동은 따로', () {
+    final sfx = Sfx();
+    expect(sfx.volumeLevel, Sfx.defaultVolumeLevel);
+    sfx.setVolumeLevel(5);
+    sfx.toggleMute();
+    expect(sfx.muted, isTrue);
+    expect(sfx.haptics, isTrue); // 소리를 꺼도 진동은 그대로
+    sfx.toggleMute();
+    expect(sfx.volumeLevel, 5); // 끄기 전 크기로 복귀
+    sfx.setVolumeLevel(99);
+    expect(sfx.volumeLevel, Sfx.maxVolumeLevel);
   });
 
   test('도트 그림의 모든 줄은 길이가 같다', () {
