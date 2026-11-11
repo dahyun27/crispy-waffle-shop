@@ -107,6 +107,16 @@ class _TitleOverlayState extends State<TitleOverlay> {
         ),
         const SizedBox(height: 14),
         PixelButton('영업 시작', big: true, width: double.infinity, onTap: game.startDay),
+        const SizedBox(height: 10),
+        PixelButton(
+          game.sfx.enabled ? '소리·진동 켜짐' : '소리·진동 꺼짐',
+          color: game.sfx.enabled ? const Color(0xFF3E9B6B) : const Color(0xFF8A7B68),
+          onTap: () => setState(() {
+            game.sfx.enabled = !game.sfx.enabled;
+            game.sfx.play('click');
+            game.onSave();
+          }),
+        ),
         if (p.day > 1 || p.money > 0) ...[
           const SizedBox(height: 10),
           PixelButton(
@@ -144,7 +154,10 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
   }
 
   void _do(bool Function() action) => setState(() {
-        if (action()) widget.game.onSave();
+        if (action()) {
+          widget.game.sfx.play('buy');
+          widget.game.onSave();
+        }
       });
 
   @override
@@ -172,7 +185,10 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
                 padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
                 child: PixelButton(label,
                     color: _tab == i ? _gold : const Color(0xFF8A7B68),
-                    onTap: () => setState(() => _tab = i)),
+                    onTap: () => setState(() {
+                      _tab = i;
+                      game.sfx.play('click');
+                    })),
               ),
             ),
         ]),

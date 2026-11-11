@@ -254,7 +254,8 @@ void drawPatience(Canvas c, Rect r, Customer cu) {
 
 // ── 진열대 ─────────────────────────────────────────────────
 
-void drawTray(Canvas c, Session s) {
+/// [bump] 은 방금 와플이 들어온 칸의 튀어오름 정도(1 → 0).
+void drawTray(Canvas c, Session s, [Map<Topping, double> bump = const {}]) {
   for (final t in Topping.values) {
     final r = Layout.tray(t.index);
     final unlocked = s.progress.isUnlocked(t);
@@ -264,7 +265,8 @@ void drawTray(Canvas c, Session s) {
     if (!unlocked) {
       lockSprite.draw(c, r.center.dx - 13, r.top + 14, scale: 3, opacity: 0.6);
     } else {
-      waffleSprite(waffleGoldenStep, t).draw(c, r.center.dx - 24, r.top + 4, opacity: count > 0 ? 1 : 0.3);
+      final hop = (sin((bump[t] ?? 0) * pi) * 4).round() * 2.0;
+      waffleSprite(waffleGoldenStep, t).draw(c, r.center.dx - 24, r.top + 4 - hop, opacity: count > 0 ? 1 : 0.3);
       final badge = Rect.fromLTWH(r.right - 26, r.top - 4, 26, 20);
       pixelBox(c, badge, count > 0 ? const Color(0xFFE5484D) : const Color(0xFFB8AC9A));
       drawText(c, '$count', badge.center.dx, badge.center.dy, color: _white, bold: true);
