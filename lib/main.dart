@@ -7,17 +7,28 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'game/progress.dart';
+import 'game/sfx.dart';
 import 'game/waffle_game.dart';
 import 'ui/overlays.dart';
 
 const _saveKey = 'crispy_waffle_save_v1';
+const _soundKey = 'crispy_waffle_sound';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
   final progress = Progress.decode(prefs.getString(_saveKey));
-  final game = WaffleGame(progress, onSave: () => prefs.setString(_saveKey, progress.encode()));
+  final sfx = Sfx(enabled: prefs.getBool(_soundKey) ?? true);
+  sfx.preload();
+  final game = WaffleGame(
+    progress,
+    sfx: sfx,
+    onSave: () {
+      prefs.setString(_saveKey, progress.encode());
+      prefs.setBool(_soundKey, sfx.enabled);
+    },
+  );
 
   runApp(MaterialApp(
     title: '바삭 와플 가게',

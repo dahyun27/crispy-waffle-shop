@@ -25,7 +25,10 @@ dart run tool/balance_sim.dart   # 밸런스 시뮬레이션(가상 플레이어
 | `lib/game/pixel.dart` | 도트 그림 엔진 |
 | `lib/game/sprites.dart` | 도트 그림 데이터(손님·직원·와플·아이콘) |
 | `lib/game/painter.dart` | 배경·손님·진열대·와플판 등 화면 그리기 |
-| `lib/game/waffle_game.dart` | Flame 게임 루프와 터치 처리 |
+| `lib/game/waffle_game.dart` | Flame 게임 루프와 터치 처리, 조각·흔들림 연출 |
+| `lib/game/sfx.dart` | 효과음과 진동 |
 | `lib/ui/overlays.dart` | 시작 화면, 정산·상점 화면 |
 | `test/session_test.dart` | 규칙 테스트 |
 | `tool/balance_sim.dart` | 밸런스 시뮬레이션 |
+| `tool/gen_sfx.py` | 효과음 합성기(`assets/audio` 생성) |
+| `tool/dump_waffles_test.dart` | 와플 도트 그림 미리보기 |
