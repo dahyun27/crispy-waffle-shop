@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../game/config.dart';
 import '../game/progress.dart';
+import '../game/sfx.dart';
 import '../game/waffle_game.dart';
 
 const _ink = Color(0xFF3A2416);
@@ -72,6 +73,182 @@ Widget _screen(Widget child) => Container(
       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 380), child: child),
     );
 
+/// 글자 하나가 점 하나인 작은 도트 아이콘.
+class PixelIcon extends StatelessWidget {
+  const PixelIcon(this.rows, {super.key, this.color = _ink, this.scale = 2});
+  final List<String> rows;
+  final Color color;
+  final double scale;
+
+  static const speaker = [
+    '....o...o...',
+    '...oo....o..',
+    'ooooo..o..o.',
+    'ooooo...o.o.',
+    'ooooo...o.o.',
+    'ooooo..o..o.',
+    '...oo....o..',
+    '....o...o...',
+  ];
+  static const speakerMuted = [
+    '....o.......',
+    '...oo.o...o.',
+    'ooooo..o.o..',
+    'ooooo...o...',
+    'ooooo...o...',
+    'ooooo..o.o..',
+    '...oo.o...o.',
+    '....o.......',
+  ];
+  static const vibration = [
+    'o..oooooo..o',
+    'o..o....o..o',
+    '.o.o....o.o.',
+    '.o.o....o.o.',
+    '.o.o....o.o.',
+    '.o.o....o.o.',
+    'o..o....o..o',
+    'o..oooooo..o',
+  ];
+  static const vibrationOff = [
+    '...oooooo...',
+    '...o....o...',
+    '...o....o...',
+    '...o....o...',
+    '...o....o...',
+    '...o....o...',
+    '...o....o...',
+    '...oooooo...',
+  ];
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        size: Size(rows.first.length * scale, rows.length * scale),
+        painter: _PixelIconPainter(rows, color, scale),
+      );
+}
+
+class _PixelIconPainter extends CustomPainter {
+  _PixelIconPainter(this.rows, this.color, this.scale);
+  final List<String> rows;
+  final Color color;
+  final double scale;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..isAntiAlias = false;
+    for (var y = 0; y < rows.length; y++) {
+      for (var x = 0; x < rows[y].length; x++) {
+        if (rows[y][x] != '.') canvas.drawRect(Rect.fromLTWH(x * scale, y * scale, scale, scale), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PixelIconPainter old) => old.rows != rows || old.color != color;
+}
+
+/// 소리 크기(스피커 아이콘 + 5단계 막대)와 진동(아이콘 + 켜고 끄는 스위치) 설정.
+class SoundSettings extends StatefulWidget {
+  const SoundSettings(this.game, {super.key});
+  final WaffleGame game;
+
+  @override
+  State<SoundSettings> createState() => _SoundSettingsState();
+}
+
+class _SoundSettingsState extends State<SoundSettings> {
+  static const _off = Color(0xFFB8AC9A);
+
+  void _change(VoidCallback action) => setState(() {
+        action();
+        widget.game.sfx.play('click'); // 바뀐 크기를 바로 들려준다.
+        widget.game.onSave();
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final sfx = widget.game.sfx;
+    return PixelPanel(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(children: [
+        // 소리: 아이콘을 누르면 음소거, 막대를 누르면 그 크기로.
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _change(sfx.toggleMute),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: PixelIcon(sfx.muted ? PixelIcon.speakerMuted : PixelIcon.speaker,
+                color: sfx.muted ? _off : _ink),
+          ),
+        ),
+        const SizedBox(width: 4),
+        for (var i = 1; i <= Sfx.maxVolumeLevel; i++)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _change(() => sfx.setVolumeLevel(i)),
+            child: Container(
+              width: 20,
+              height: 30,
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: 14,
+                height: 6.0 + i * 4,
+                decoration: BoxDecoration(
+                  color: i <= sfx.volumeLevel ? _gold : const Color(0xFFE6DDD0),
+                  border: Border.all(color: i <= sfx.volumeLevel ? _ink : _off, width: 2),
+                ),
+              ),
+            ),
+          ),
+        const Spacer(),
+        // 진동: 켜고 끄는 스위치.
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _change(() {
+            sfx.haptics = !sfx.haptics;
+            sfx.haptic(Haptic.medium);
+          }),
+          child: Row(children: [
+            PixelIcon(sfx.haptics ? PixelIcon.vibration : PixelIcon.vibrationOff,
+                color: sfx.haptics ? _ink : _off),
+            const SizedBox(width: 8),
+            Container(
+              width: 52,
+              height: 26,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: sfx.haptics ? _green : _off,
+                border: Border.all(color: _ink, width: 3),
+              ),
+              child: Stack(alignment: Alignment.center, children: [
+                Align(
+                  alignment: sfx.haptics ? Alignment.centerLeft : Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Text(sfx.haptics ? 'ON' : 'OFF', style: _t(10, color: Colors.white, bold: true)),
+                  ),
+                ),
+                Align(
+                  alignment: sfx.haptics ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(color: Colors.white, border: Border.all(color: _ink, width: 2)),
+                  ),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
 class TitleOverlay extends StatefulWidget {
   const TitleOverlay(this.game, {super.key});
   final WaffleGame game;
@@ -109,15 +286,7 @@ class _TitleOverlayState extends State<TitleOverlay> {
         const SizedBox(height: 14),
         PixelButton('영업 시작', big: true, width: double.infinity, onTap: game.startDay),
         const SizedBox(height: 10),
-        PixelButton(
-          game.sfx.enabled ? '소리와 진동 켜짐' : '소리와 진동 꺼짐',
-          color: game.sfx.enabled ? const Color(0xFF3E9B6B) : const Color(0xFF8A7B68),
-          onTap: () => setState(() {
-            game.sfx.enabled = !game.sfx.enabled;
-            game.sfx.play('click');
-            game.onSave();
-          }),
-        ),
+        SoundSettings(game),
         if (p.day > 1 || p.money > 0) ...[
           const SizedBox(height: 10),
           PixelButton(

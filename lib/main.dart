@@ -12,21 +12,29 @@ import 'game/waffle_game.dart';
 import 'ui/overlays.dart';
 
 const _saveKey = 'crispy_waffle_save_v1';
-const _soundKey = 'crispy_waffle_sound';
+const _soundKey = 'crispy_waffle_sound'; // 예전 설정(소리와 진동을 함께 켜고 끄던 값)
+const _volumeKey = 'crispy_waffle_volume';
+const _hapticsKey = 'crispy_waffle_haptics';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
   final progress = Progress.decode(prefs.getString(_saveKey));
-  final sfx = Sfx(enabled: prefs.getBool(_soundKey) ?? true);
+  // 예전에 '끔'으로 저장해 둔 사람은 새 설정에서도 꺼진 상태로 시작한다.
+  final legacyOn = prefs.getBool(_soundKey) ?? true;
+  final sfx = Sfx(
+    volumeLevel: prefs.getInt(_volumeKey) ?? (legacyOn ? Sfx.defaultVolumeLevel : 0),
+    haptics: prefs.getBool(_hapticsKey) ?? legacyOn,
+  );
   sfx.preload();
   final game = WaffleGame(
     progress,
     sfx: sfx,
     onSave: () {
       prefs.setString(_saveKey, progress.encode());
-      prefs.setBool(_soundKey, sfx.enabled);
+      prefs.setInt(_volumeKey, sfx.volumeLevel);
+      prefs.setBool(_hapticsKey, sfx.haptics);
     },
   );
 

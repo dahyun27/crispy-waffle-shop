@@ -37,7 +37,7 @@ class _Particle {
 }
 
 class WaffleGame extends FlameGame with TapCallbacks {
-  WaffleGame(this.progress, {required this.onSave, Sfx? sfx}) : sfx = sfx ?? Sfx(enabled: false);
+  WaffleGame(this.progress, {required this.onSave, Sfx? sfx}) : sfx = sfx ?? Sfx(volumeLevel: 0, haptics: false);
 
   final Progress progress;
   final void Function() onSave;
@@ -198,7 +198,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
         _burst(at, const [Color(0xFFFFFFFF), Color(0xFFE9D9B8)], 5, 90);
         _trayBump[Topping.plain] = _bumpTime;
       case FxType.tooEarly:
-        sfx.play('early', volume: 0.4);
+        sfx.play('early', volume: 0.65);
       case FxType.burnt:
         sfx.play('burnt');
         sfx.haptic(Haptic.heavy);
@@ -216,7 +216,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
         sfx.play('lost');
         sfx.haptic(Haptic.medium);
       case FxType.noStock:
-        sfx.play('early', volume: 0.4);
+        sfx.play('early', volume: 0.65);
       default:
         break;
     }
