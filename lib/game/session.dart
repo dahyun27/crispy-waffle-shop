@@ -41,7 +41,7 @@ class Customer {
   int get remaining => qty - delivered;
 }
 
-enum FxType { perfect, good, tooEarly, burnt, trayFull, served, setBonus, lost, rush, vip, noStock, staff }
+enum FxType { perfect, good, tooEarly, burnt, trayFull, served, setBonus, lost, rush, vip, noStock, staff, mission }
 
 /// 화면 연출(떠오르는 글자 등)을 위해 로직이 남기는 사건 기록.
 class Fx {
@@ -53,6 +53,46 @@ class Fx {
   final StaffId? staff;
 }
 
+/// 하루에 하나 주어지는 추가 목표. 달성하면 정산 때 보너스를 받는다.
+class Mission {
+  Mission(this.type, this.target, this.reward);
+  final MissionType type;
+  final int target;
+  final int reward;
+
+  String get title => switch (type) {
+        MissionType.perfects => '퍼펙트 $target번',
+        MissionType.serves => '와플 $target개 판매',
+        MissionType.combo => '콤보 $target 달성',
+        MissionType.noBurn => '하나도 태우지 않기',
+        MissionType.noLost => '손님 놓치지 않기',
+      };
+
+  /// 영업 중 화면에 보이는 짧은 진행 표시.
+  String progressLabel(Session s) => switch (type) {
+        MissionType.perfects => '퍼펙트 ${s.perfects}/$target',
+        MissionType.serves => '판매 ${s.served}/$target',
+        MissionType.combo => '콤보 ${s.bestCombo}/$target',
+        MissionType.noBurn => s.burnt == 0 ? '안 태우기' : '태웠어요',
+        MissionType.noLost => s.lost == 0 ? '손님 지키기' : '놓쳤어요',
+      };
+
+  /// 횟수를 채우는 미션은 채우는 즉시, 지키는 미션은 영업이 끝났을 때 달성된다.
+  bool done(Session s) => switch (type) {
+        MissionType.perfects => s.perfects >= target,
+        MissionType.serves => s.served >= target,
+        MissionType.combo => s.bestCombo >= target,
+        MissionType.noBurn => s.finished && s.burnt == 0 && s.served >= target,
+        MissionType.noLost => s.finished && s.lost == 0 && s.served >= target,
+      };
+
+  bool failed(Session s) => switch (type) {
+        MissionType.noBurn => s.burnt > 0,
+        MissionType.noLost => s.lost > 0,
+        _ => false,
+      };
+}
+
 class Session {
   Session(this.progress, {Random? random, this.autoSpawn = true, Weather? weather})
       : rng = random ?? Random(),
@@ -60,6 +100,7 @@ class Session {
         goal = Balance.goalForDay(progress.day) {
     this.weather = weather ?? _rollWeather();
     customers = List<Customer?>.filled(progress.stageDef.customerSlots, null);
+    mission = _rollMission();
     rushAt = progress.day >= 2 ? 15 + rng.nextDouble() * 25 : -1;
     vipAt = progress.day >= 3 ? 8 + rng.nextDouble() * 40 : -1;
     spawnTimer = 1.0;
@@ -71,6 +112,8 @@ class Session {
   final int day; // 이 영업이 시작된 날짜
   final int goal;
   late final Weather weather;
+  late final Mission mission;
+  bool _missionAnnounced = false;
 
   final griddles = List.generate(Balance.griddleSlots, (_) => Griddle());
   late final List<Customer?> customers;
@@ -105,6 +148,23 @@ class Session {
         2 => (goal * Balance.star2Bonus).round(),
         _ => 0,
       };
+  int get missionBonus => mission.done(this) ? mission.reward : 0;
+
+  /// 예상 손님 수에 맞춰 무리 없는 목표치를 정한다.
+  Mission _rollMission() {
+    final reward = (goal * missionRewardRatio / 10).round() * 10;
+    final customers = Balance.dayLength / spawnInterval;
+    final type = day == 1 ? MissionType.serves : MissionType.values[rng.nextInt(MissionType.values.length)];
+    final target = switch (type) {
+      MissionType.perfects => (customers * 0.45).round().clamp(4, 30),
+      MissionType.serves => (customers * 0.75).round().clamp(5, 60),
+      MissionType.combo => (4 + progress.stage * 2 + day ~/ 10).clamp(4, 12),
+      // 지키는 미션은 가만히 있어서 달성되지 않도록 최소 판매량을 둔다.
+      MissionType.noBurn || MissionType.noLost => (customers * 0.4).round().clamp(4, 30),
+    };
+    return Mission(type, target, reward);
+  }
+
   bool get rushing => rushLeft > 0;
   int get trayCount => tray.values.fold(0, (a, b) => a + b);
   bool get trayFull => trayCount >= progress.trayCapacity;
@@ -246,6 +306,10 @@ class Session {
     _updateGriddles(dt);
     _updateCustomers(dt);
     _updateStaff(dt);
+    if (!_missionAnnounced && mission.done(this)) {
+      _missionAnnounced = true;
+      events.add(Fx(FxType.mission, amount: mission.reward));
+    }
   }
 
   void _updateGriddles(double dt) {

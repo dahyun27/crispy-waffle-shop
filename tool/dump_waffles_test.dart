@@ -14,7 +14,7 @@ void main() {
     const scale = 8, pad = 16, n = waffleSize;
     final sprites = [
       for (final t in Topping.values) waffleSprite(waffleGoldenStep, t),
-      for (final s in [0, 3, 9, waffleBurntStep]) waffleSprite(s),
+      for (final s in [0, waffleBurntStep]) waffleSprite(s),
     ];
     final w = sprites.length * (n * scale + pad) + pad, h = n * scale + pad * 2;
     final data = Uint8List(w * h * 3);

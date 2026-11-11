@@ -19,8 +19,8 @@ class Layout {
     return Rect.fromLTWH(left + i * w, 96, w, 130);
   }
 
-  /// 진열대 칸(토핑 순서대로 0~3)
-  static Rect tray(int i) => Rect.fromLTWH(12 + i * 85.0, 256, 80, 72);
+  /// 진열대 칸(토핑 순서대로 0~5)
+  static Rect tray(int i) => Rect.fromLTWH(10 + i * 57.0, 256, 54, 72);
 
   /// 와플판 칸(0~8, 3x3)
   static Rect griddle(int i) =>

@@ -49,7 +49,9 @@ class Progress {
 
   bool isUnlocked(Topping t) => switch (t) {
         Topping.plain || Topping.choco => true,
+        Topping.honey => level(UpgradeId.honey) > 0,
         Topping.berry => level(UpgradeId.berry) > 0,
+        Topping.matcha => level(UpgradeId.matcha) > 0,
         Topping.cream => level(UpgradeId.cream) > 0,
       };
 

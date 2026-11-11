@@ -53,7 +53,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
   double _scale = 1;
   Offset _origin = Offset.zero;
   double _time = 0;
-  String _bannerTitle = '', _bannerSub = '';
+  String _bannerTitle = '', _bannerSub = '', _bannerSub2 = '';
   double _bannerLeft = 0;
 
   @override
@@ -74,7 +74,8 @@ class WaffleGame extends FlameGame with TapCallbacks {
     sfx.play('start');
     overlays.remove('title');
     overlays.remove('dayEnd');
-    _banner('${s.day}일차 · ${s.weatherDef.name}', s.weatherDef.desc, 2.4);
+    _banner('${s.day}일차 · ${s.weatherDef.name}', s.weatherDef.desc, 3.0,
+        '오늘의 미션: ${s.mission.title} (+${s.mission.reward}원)');
   }
 
   void resetAll() {
@@ -94,14 +95,15 @@ class WaffleGame extends FlameGame with TapCallbacks {
     onSave();
   }
 
-  void _banner(String title, String sub, double seconds) {
+  void _banner(String title, String sub, double seconds, [String sub2 = '']) {
     _bannerTitle = title;
     _bannerSub = sub;
+    _bannerSub2 = sub2;
     _bannerLeft = seconds;
   }
 
   void _endDay(Session s) {
-    progress.money += s.earned + s.starBonus;
+    progress.money += s.earned + s.starBonus + s.missionBonus;
     progress.stars += s.stars;
     if (s.success) progress.day++;
     sfx.play(s.success ? 'win' : 'fail');
@@ -139,6 +141,11 @@ class WaffleGame extends FlameGame with TapCallbacks {
       if (e.type == FxType.staff) {
         _staffFlash[e.staff!] = 0.35;
         if (e.staff == StaffId.baker) _trayBump[Topping.plain] = _bumpTime;
+        continue;
+      }
+      if (e.type == FxType.mission) {
+        _banner('미션 달성!', '정산 때 +${e.amount}원', 1.6);
+        sfx.play('bonus');
         continue;
       }
       if (e.type == FxType.rush) {
@@ -277,7 +284,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
           bold: true);
     }
     if (_bannerLeft > 0 && session != null) {
-      drawBanner(canvas, _bannerTitle, _bannerSub, _bannerLeft * 3);
+      drawBanner(canvas, _bannerTitle, _bannerSub, _bannerLeft * 3, _bannerSub2);
     }
     canvas.restore();
   }

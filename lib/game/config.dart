@@ -4,19 +4,23 @@ library;
 
 import 'dart:math';
 
-enum Topping { plain, choco, berry, cream }
+enum Topping { plain, choco, honey, berry, matcha, cream }
 
 const toppingLabels = {
   Topping.plain: '기본',
   Topping.choco: '초코',
+  Topping.honey: '허니',
   Topping.berry: '딸기',
+  Topping.matcha: '말차',
   Topping.cream: '크림',
 };
 
 const toppingPrices = {
   Topping.plain: 20,
   Topping.choco: 34,
+  Topping.honey: 42,
   Topping.berry: 50,
+  Topping.matcha: 58,
   Topping.cream: 64,
 };
 
@@ -42,7 +46,7 @@ const stageDefs = [
 
 // ── 업그레이드 ─────────────────────────────────────────────
 
-enum UpgradeId { heat, griddle, tray, batter, decor, sign, berry, cream }
+enum UpgradeId { heat, griddle, tray, batter, decor, sign, honey, berry, matcha, cream }
 
 class UpgradeDef {
   const UpgradeDef(this.name, this.desc, this.maxLevel, this.baseCost, this.growth,
@@ -64,7 +68,9 @@ const upgradeDefs = {
   UpgradeId.batter: UpgradeDef('고급 반죽', '모든 와플 가격 +10%', 5, 320, 2.0),
   UpgradeId.tray: UpgradeDef('진열대 확장', '보관 칸 +2', 4, 150, 1.9),
   UpgradeId.decor: UpgradeDef('가게 꾸미기', '손님이 2초 더 기다려요', 4, 220, 1.9),
+  UpgradeId.honey: UpgradeDef('허니버터 토핑', '허니버터 와플 주문을 받아요', 1, 450, 1),
   UpgradeId.berry: UpgradeDef('딸기 토핑', '딸기 와플 주문을 받아요', 1, 700, 1, minStage: 1),
+  UpgradeId.matcha: UpgradeDef('말차 토핑', '말차 와플 주문을 받아요', 1, 3200, 1, minStage: 2),
   UpgradeId.cream: UpgradeDef('크림 토핑', '크림 와플 주문을 받아요', 1, 5000, 1, minStage: 2),
 };
 
@@ -117,6 +123,12 @@ const weatherDefs = {
   Weather.festival: WeatherDef('축제', '손님이 몰려오지만 성격이 급해요', 0.72, 1.0, 0.85),
 };
 
+// ── 오늘의 미션 ────────────────────────────────────────────
+
+enum MissionType { perfects, serves, combo, noBurn, noLost }
+
+const missionRewardRatio = 0.15; // 목표 금액 대비 보상
+
 // ── 수치 ───────────────────────────────────────────────────
 
 class Balance {
@@ -148,7 +160,7 @@ class Balance {
   /// 동네 가게에서 수입이 잠시 정체되는 9~16일차는 완만하게 올린다.
   static const goalAnchors = [
     (1, 150), (5, 480), (9, 850), (13, 1050), (16, 1250),
-    (20, 1900), (25, 2700), (30, 3500), (35, 4300), (40, 4800),
+    (20, 2000), (25, 2900), (30, 3800), (35, 4600), (40, 5200),
   ];
 
   static int goalForDay(int day) {

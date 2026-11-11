@@ -140,6 +140,43 @@ void main() {
     expect(s.starBonus, greaterThan(0));
   });
 
+  test('새 토핑: 허니버터는 수레에서, 말차는 카페에서 열린다', () {
+    final p = Progress()..money = 99999;
+    expect(p.buy(UpgradeId.honey), isTrue);
+    expect(p.buy(UpgradeId.matcha), isFalse);
+    p.expand();
+    p.expand();
+    expect(p.buy(UpgradeId.matcha), isTrue);
+    final s = newSession(p);
+    s.tray[Topping.plain] = 2;
+    expect(s.applyTopping(Topping.honey), isTrue);
+    expect(s.applyTopping(Topping.matcha), isTrue);
+    s.addCustomer(Topping.matcha);
+    expect(s.serve(0), isTrue);
+  });
+
+  test('미션: 횟수를 채우면 즉시 달성되고 보너스가 붙는다', () {
+    final s = newSession();
+    expect(s.mission.type, MissionType.serves); // 1일차는 항상 판매 미션
+    expect(s.missionBonus, 0);
+    s.served = s.mission.target;
+    s.update(0.1);
+    expect(s.missionBonus, s.mission.reward);
+    expect(s.events.any((e) => e.type == FxType.mission), isTrue);
+  });
+
+  test('미션: 지키는 미션은 영업이 끝나야 달성되고, 어기면 실패한다', () {
+    final s = newSession();
+    final keep = Mission(MissionType.noBurn, 3, 50);
+    s.served = 3;
+    expect(keep.done(s), isFalse); // 아직 영업 중
+    s.timeLeft = 0;
+    expect(keep.done(s), isTrue);
+    s.burnt = 1;
+    expect(keep.done(s), isFalse);
+    expect(keep.failed(s), isTrue);
+  });
+
   test('저장/불러오기', () {
     final p = Progress()..money = 5000;
     p.expand();

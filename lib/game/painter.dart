@@ -186,8 +186,15 @@ void drawHud(Canvas c, Session s) {
   px(c, 0, Layout.hud.height - 2, Layout.width, 2, const Color(0xFF1E120A));
   drawText(c, '${s.day}일차', 10, 15, size: 16, color: _white, anchor: Anchor.centerLeft, bold: true);
   weatherSprites[s.weather]!.draw(c, 78, 6);
-  drawText(c, s.weatherDef.name, 100, 15, color: const Color(0xFFCDBBA8), anchor: Anchor.centerLeft);
-  drawText(c, '목표 ${s.goal}원', Layout.width / 2 + 30, 15, color: const Color(0xFFFFD66B));
+  // 오늘의 미션 진행 상황
+  final m = s.mission;
+  final missionDone = m.done(s);
+  drawText(c, missionDone ? '미션 달성!' : m.progressLabel(s), 100, 15,
+      color: missionDone
+          ? const Color(0xFFFFE14D)
+          : (m.failed(s) ? const Color(0xFF9A8B7A) : const Color(0xFF8FE3C0)),
+      anchor: Anchor.centerLeft);
+  drawText(c, '목표 ${s.goal}', 252, 15, color: const Color(0xFFFFD66B));
   final low = s.timeLeft <= 10;
   drawText(c, '${s.timeLeft.ceil()}초', Layout.width - 10, 15,
       size: 16, color: low ? const Color(0xFFFF7A6B) : _white, anchor: Anchor.centerRight, bold: true);
@@ -263,11 +270,11 @@ void drawTray(Canvas c, Session s, [Map<Topping, double> bump = const {}]) {
     pixelBox(c, r, unlocked ? _white : const Color(0xFFD9CFC0),
         hi: unlocked ? null : const Color(0xFFE6DDD0), lo: const Color(0xFFE0D2B8));
     if (!unlocked) {
-      lockSprite.draw(c, r.center.dx - 13, r.top + 14, scale: 3, opacity: 0.6);
+      lockSprite.draw(c, r.center.dx - 9, r.top + 18, opacity: 0.6);
     } else {
       final hop = (sin((bump[t] ?? 0) * pi) * 4).round() * 2.0;
       waffleSprite(waffleGoldenStep, t).draw(c, r.center.dx - 24, r.top + 4 - hop, opacity: count > 0 ? 1 : 0.3);
-      final badge = Rect.fromLTWH(r.right - 26, r.top - 4, 26, 20);
+      final badge = Rect.fromLTWH(r.right - 22, r.top - 5, 24, 18);
       pixelBox(c, badge, count > 0 ? const Color(0xFFE5484D) : const Color(0xFFB8AC9A));
       drawText(c, '$count', badge.center.dx, badge.center.dy, color: _white, bold: true);
     }
@@ -357,12 +364,16 @@ void drawStaff(Canvas c, Session s, Map<StaffId, double> flash) {
   }
 }
 
-/// 화면 가운데 큰 알림(날씨, 러시 등).
-void drawBanner(Canvas c, String title, String sub, double alpha) {
+/// 화면 가운데 큰 알림(날씨, 러시 등). [sub2] 가 있으면 한 줄 더 보여준다.
+void drawBanner(Canvas c, String title, String sub, double alpha, [String sub2 = '']) {
   final a = alpha.clamp(0.0, 1.0);
-  px(c, 0, 108, Layout.width, 58, Color.fromRGBO(30, 18, 10, 0.78 * a));
+  final extra = sub2.isEmpty ? 0.0 : 18.0;
+  px(c, 0, 108, Layout.width, 58 + extra, Color.fromRGBO(30, 18, 10, 0.78 * a));
   px(c, 0, 108, Layout.width, 2, Color.fromRGBO(255, 210, 63, a));
-  px(c, 0, 164, Layout.width, 2, Color.fromRGBO(255, 210, 63, a));
+  px(c, 0, 164 + extra, Layout.width, 2, Color.fromRGBO(255, 210, 63, a));
   drawText(c, title, Layout.width / 2, 127, size: 24, color: Color.fromRGBO(255, 225, 77, a), bold: true);
   drawText(c, sub, Layout.width / 2, 151, color: Color.fromRGBO(255, 255, 255, a));
+  if (sub2.isNotEmpty) {
+    drawText(c, sub2, Layout.width / 2, 169, color: Color.fromRGBO(143, 227, 192, a));
+  }
 }

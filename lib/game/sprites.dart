@@ -17,7 +17,9 @@ const ink = Color(0xFF3A2416);
 const toppingColors = {
   Topping.plain: Color(0xFFE9A93B),
   Topping.choco: Color(0xFF5A3219),
+  Topping.honey: Color(0xFFF5B82E),
   Topping.berry: Color(0xFFE5486B),
+  Topping.matcha: Color(0xFF7CB342),
   Topping.cream: Color(0xFFFFFBF2),
 };
 
@@ -28,7 +30,7 @@ final _waffleCache = <int, PixelSprite>{};
 /// [step] 0=막 부은 반죽 … 7=노릇노릇 … 12=탐.
 PixelSprite waffleSprite(int step, [Topping topping = Topping.plain]) {
   step = step.clamp(0, waffleBurntStep);
-  return _waffleCache[step * 4 + topping.index] ??= _makeWaffle(step, topping);
+  return _waffleCache[step * 8 + topping.index] ??= _makeWaffle(step, topping);
 }
 
 /// 와플 한 변의 점 개수.
@@ -148,6 +150,42 @@ PixelSprite _makeWaffle(int step, Topping topping) {
       stamp(15, 18, chunk, chunkColors);
       sparkle(17, 6);
 
+    case Topping.honey:
+      // 윤기 나는 꿀이 넓게 퍼지고, 가운데에 녹아내리는 버터 한 조각.
+      const honey = Color(0xFFF09A1A), honeyLight = Color(0xFFFFC548), honeyDeep = Color(0xFFA9560A);
+      final pool = <int>{};
+      for (var y = 2; y <= 21; y++) {
+        for (var x = 2; x <= 21; x++) {
+          final dx = x - 11.5, dy = y - 11.0;
+          final d = sqrt(dx * dx + dy * dy * 1.15);
+          final r = 8.2 + 1.2 * sin(atan2(dy, dx) * 4 + 1.1);
+          if (d > r) continue;
+          dot(x, y, d > r - 1 ? honeyDeep : (dx + dy < -5 ? honeyLight : honey));
+          pool.add(y * n + x);
+        }
+      }
+      // 꿀이 홈으로 흘러내린 줄기
+      for (final (x, len) in [(5, 3), (12, 4), (18, 3)]) {
+        for (var k = 0; k < len; k++) {
+          dot(x, 18 + k, honey);
+          dot(x + 1, 18 + k, honeyDeep);
+        }
+      }
+      for (final (x, y) in [(6, 7), (7, 6), (8, 6), (15, 5), (16, 6), (5, 12), (17, 15)]) {
+        if (pool.contains(y * n + x)) dot(x, y, const Color(0xFFFFF3B8));
+      }
+      const butter = ['.oooooo.', 'ohhhhhho', 'ohbbbbdo', 'ohbbbbdo', 'ohbbbbdo', 'obdddddo', '.oooooo.', '..mmmm..'];
+      stamp(8, 7, butter, const {
+        'h': Color(0xFFFFFBDD),
+        'b': Color(0xFFFFEE9A),
+        'd': Color(0xFFE8C860),
+        'm': Color(0xFFFFD75A),
+        'o': Color(0xFFB07A18),
+      });
+      dot(10, 9, const Color(0xFFFFFFFF));
+      dot(11, 9, const Color(0xFFFFFFFF));
+      sparkle(17, 8);
+
     case Topping.berry:
       // 딸기 시럽 웅덩이 + 딸기 세 조각 + 블루베리 + 민트 + 슈가파우더.
       const rim = Color(0xFFA81E40), sauce = Color(0xFFE8456A), sauceLight = Color(0xFFF7799A);
@@ -182,6 +220,39 @@ PixelSprite _makeWaffle(int step, Topping topping) {
       const mint = ['l..l', 'lmml', '.mm.'];
       stamp(10, 3, mint, const {'l': Color(0xFF8FD98A), 'm': Color(0xFF3E8A4A)});
       sparkle(18, 5);
+
+    case Topping.matcha:
+      // 말차 가루를 뿌린 와플에 말차 크림, 팥, 흰 시럽.
+      const powder = Color(0xFF8FBF4A), powderDeep = Color(0xFF5E8F2E);
+      for (var y = 2; y <= 21; y++) {
+        for (var x = 2; x <= 21; x++) {
+          final under = p[y * n + x];
+          if (under == null) continue;
+          final speck = (x * 7 + y * 13) % 5;
+          if (speck < 3) dot(x, y, Color.lerp(under, speck == 0 ? powderDeep : powder, 0.75)!);
+        }
+      }
+      for (var x = 3; x <= 20; x++) {
+        final k = (x + 2) % 8;
+        final y = 16 + (k < 4 ? k : 8 - k);
+        dot(x, y, const Color(0xFFFFF8E8));
+      }
+      const mLine = Color(0xFF4E7A2A), mBase = Color(0xFFA8D468), mLight = Color(0xFFD3EE9E), mShade = Color(0xFF7FB045);
+      Color swirl(double dx, double dy, double d) {
+        if (d > 0.8) return mLine;
+        if (dy > 0.35 || dx > 0.55) return mShade;
+        return dx + dy > 0.1 ? mBase : mLight;
+      }
+      ellipse(11.5, 11.5, 6.4, 4.6, swirl);
+      ellipse(11.5, 8.2, 4.4, 3.4, swirl);
+      ellipse(11.5, 5.6, 2.4, 2.0, swirl);
+      const bean = ['.rr.', 'rhrd', '.dd.'];
+      const beanColors = {'r': Color(0xFF8A2E3A), 'h': Color(0xFFD08090), 'd': Color(0xFF5A1822)};
+      stamp(3, 12, bean, beanColors);
+      stamp(17, 11, bean, beanColors);
+      stamp(15, 17, bean, beanColors);
+      stamp(5, 18, bean, beanColors);
+      sparkle(7, 6);
 
     case Topping.cream:
       // 세 단 생크림 + 캐러멜 시럽 + 스프링클 + 초코 스틱 + 체리.
