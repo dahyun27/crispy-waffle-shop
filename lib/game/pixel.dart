@@ -2,6 +2,7 @@
 /// 확대해도 뭉개지지 않게(FilterQuality.none) 그린다.
 library;
 
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart';
@@ -66,4 +67,58 @@ class PixelSprite {
     c.drawImageRect(image, Rect.fromLTWH(0, 0, w.toDouble(), hh.toDouble()),
         Rect.fromLTWH(x, y, w * scale, hh * scale), _imagePaint);
   }
+}
+
+/// 점 단위로 그림을 그려 [PixelSprite] 로 만드는 작은 도화지.
+class PixelCanvas {
+  PixelCanvas(this.w, this.h) : pixels = List<Color?>.filled(w * h, null);
+
+  final int w;
+  final int h;
+  final List<Color?> pixels;
+
+  Color? at(int x, int y) => (x < 0 || y < 0 || x >= w || y >= h) ? null : pixels[y * w + x];
+
+  void dot(int x, int y, Color color) {
+    if (x >= 0 && y >= 0 && x < w && y < h) pixels[y * w + x] = color;
+  }
+
+  void rect(int x, int y, int rw, int rh, Color color) {
+    for (var yy = y; yy < y + rh; yy++) {
+      for (var xx = x; xx < x + rw; xx++) {
+        dot(xx, yy, color);
+      }
+    }
+  }
+
+  /// 타원. [shade] 는 (가로 -1~1, 세로 -1~1, 중심 거리 0~1)로 색을 정하고, null 이면 칠하지 않는다.
+  void ellipse(double cx, double cy, double rx, double ry, Color? Function(double, double, double) shade) {
+    for (var y = (cy - ry).floor(); y <= (cy + ry).ceil(); y++) {
+      for (var x = (cx - rx).floor(); x <= (cx + rx).ceil(); x++) {
+        final dx = (x - cx) / rx, dy = (y - cy) / ry;
+        final d = sqrt(dx * dx + dy * dy);
+        if (d > 1) continue;
+        final col = shade(dx, dy, d);
+        if (col != null) dot(x, y, col);
+      }
+    }
+  }
+
+  /// 칠해진 부분의 바깥 한 줄을 [color] 로 둘러 외곽선을 만든다.
+  void outline(Color color) {
+    final edge = <int>[];
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        if (pixels[y * w + x] != null) continue;
+        if (at(x - 1, y) != null || at(x + 1, y) != null || at(x, y - 1) != null || at(x, y + 1) != null) {
+          edge.add(y * w + x);
+        }
+      }
+    }
+    for (final i in edge) {
+      pixels[i] = color;
+    }
+  }
+
+  PixelSprite toSprite() => PixelSprite.fromPixels(w, h, pixels);
 }
