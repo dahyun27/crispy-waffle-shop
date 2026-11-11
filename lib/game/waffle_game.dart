@@ -74,7 +74,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
     sfx.play('start');
     overlays.remove('title');
     overlays.remove('dayEnd');
-    _banner('${s.day}일차 · ${s.weatherDef.name}', s.weatherDef.desc, 3.0,
+    _banner('${s.day}일차 ${s.weatherDef.name}', s.weatherDef.desc, 3.0,
         '오늘의 미션: ${s.mission.title} (+${s.mission.reward}원)');
   }
 
@@ -185,7 +185,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
 
   static const _bumpTime = 0.22;
 
-  /// 사건별 소리·진동·조각 연출.
+  /// 사건별 소리, 진동, 조각 연출.
   void _feedback(Fx e, Offset at) {
     switch (e.type) {
       case FxType.perfect:

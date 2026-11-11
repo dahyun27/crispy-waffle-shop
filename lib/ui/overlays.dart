@@ -91,7 +91,8 @@ class _TitleOverlayState extends State<TitleOverlay> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('바삭 와플 가게', style: _t(30, bold: true)),
         const SizedBox(height: 4),
-        Text('${p.stageDef.name} · ${p.day}일차 · ${p.money}원 · 별 ${p.stars}개', style: _t(12)),
+        Text('${p.stageDef.name} ${p.day}일차', style: _t(14, bold: true)),
+        Text('보유 ${p.money}원   별 ${p.stars}개', style: _t(12)),
         const SizedBox(height: 12),
         PixelPanel(
           color: Colors.white,
@@ -109,7 +110,7 @@ class _TitleOverlayState extends State<TitleOverlay> {
         PixelButton('영업 시작', big: true, width: double.infinity, onTap: game.startDay),
         const SizedBox(height: 10),
         PixelButton(
-          game.sfx.enabled ? '소리·진동 켜짐' : '소리·진동 꺼짐',
+          game.sfx.enabled ? '소리와 진동 켜짐' : '소리와 진동 꺼짐',
           color: game.sfx.enabled ? const Color(0xFF3E9B6B) : const Color(0xFF8A7B68),
           onTap: () => setState(() {
             game.sfx.enabled = !game.sfx.enabled;
@@ -178,8 +179,27 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
             '매출 ${s.earned}원 / 목표 ${s.goal}원'
             '${s.starBonus > 0 ? '  (별 보너스 +${s.starBonus}원)' : ''}',
             style: _t(12, bold: true)),
-        Text('판매 ${s.served} · 놓침 ${s.lost} · 태움 ${s.burnt} · 퍼펙트 ${s.perfects} · 최고 콤보 ${s.bestCombo}',
-            style: _t(11)),
+        const SizedBox(height: 6),
+        Row(children: [
+          for (final (label, value) in [
+            ('판매', s.served),
+            ('놓침', s.lost),
+            ('태움', s.burnt),
+            ('퍼펙트', s.perfects),
+            ('최고 콤보', s.bestCombo),
+          ])
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                decoration: BoxDecoration(color: Colors.white, border: Border.all(color: _ink, width: 2)),
+                child: Column(children: [
+                  Text('$value', style: _t(14, bold: true)),
+                  Text(label, style: _t(10, color: const Color(0xFF6B5340))),
+                ]),
+              ),
+            ),
+        ]),
         const SizedBox(height: 10),
         Row(children: [
           for (final (i, label) in ['업그레이드', '직원', '가게 확장'].indexed)
@@ -261,7 +281,7 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
     if (!st.hired) {
       final locked = p.stage < def.minStage;
       return _row(
-        title: '${def.name} · ${def.role}',
+        title: '${def.name} (${def.role})',
         desc: def.desc,
         action: PixelButton(locked ? '${def.minStage + 1}단계 필요' : '고용 ${def.hireCost}원',
             width: 96, color: _pink, onTap: p.canHire(id) ? () => _do(() => p.hire(id)) : null),
@@ -270,7 +290,7 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
     final maxed = st.level >= staffMaxLevel;
     final value = p.staffValue(id).toStringAsFixed(1);
     return _row(
-      title: '${def.name} · ${def.role}  Lv${st.level}/$staffMaxLevel',
+      title: '${def.name} (${def.role})  Lv${st.level}/$staffMaxLevel',
       desc: id == StaffId.baker ? '구워진 뒤 $value초에 꺼내요' : '$value초마다 일해요',
       progress: st.levelProgress,
       action: PixelButton(maxed ? '최대' : '훈련 ${p.trainCostOf(id)}원',
@@ -281,7 +301,7 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
   List<Widget> _stageRows(Progress p) => [
         for (final (i, def) in stageDefs.indexed)
           _row(
-            title: '${i + 1}단계 · ${def.name}',
+            title: '${i + 1}단계 ${def.name}',
             desc: def.desc,
             action: PixelButton(
               i <= p.stage ? (i == p.stage ? '현재' : '완료') : (i == p.stage + 1 ? '${def.cost}원' : '잠김'),
