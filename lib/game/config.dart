@@ -17,7 +17,7 @@ const toppingPrices = {
   Topping.plain: 20,
   Topping.choco: 34,
   Topping.berry: 50,
-  Topping.cream: 72,
+  Topping.cream: 64,
 };
 
 // ── 가게 단계 ──────────────────────────────────────────────
@@ -36,8 +36,8 @@ class StageDef {
 
 const stageDefs = [
   StageDef('골목 수레', '작은 수레에서 시작해요', 0, 2, 4, 1.0, 0),
-  StageDef('동네 가게', '손님 자리 3칸 · 2개 주문 등장 · 딸기 토핑 가능', 1800, 3, 6, 0.8, 0.25),
-  StageDef('와플 카페', '손님 자리 4칸 · 와플판 9칸 · 크림 토핑 가능', 7500, 4, 9, 0.64, 0.4),
+  StageDef('동네 가게', '손님 자리 3칸 · 2개 주문 등장 · 딸기 토핑 가능', 2200, 3, 6, 0.72, 0.3),
+  StageDef('와플 카페', '손님 자리 4칸 · 와플판 9칸 · 크림 토핑 가능', 6000, 4, 9, 0.6, 0.35),
 ];
 
 // ── 업그레이드 ─────────────────────────────────────────────
@@ -60,8 +60,8 @@ class UpgradeDef {
 const upgradeDefs = {
   UpgradeId.griddle: UpgradeDef('와플판 추가', '굽는 칸이 하나 늘어나요', 7, 160, 2.0),
   UpgradeId.heat: UpgradeDef('화력 강화', '굽는 시간 -10%', 5, 240, 2.1),
-  UpgradeId.sign: UpgradeDef('간판 홍보', '손님이 더 자주 와요', 5, 280, 2.1),
-  UpgradeId.batter: UpgradeDef('고급 반죽', '모든 와플 가격 +10%', 5, 320, 2.2),
+  UpgradeId.sign: UpgradeDef('간판 홍보', '손님이 더 자주 와요', 5, 280, 1.8),
+  UpgradeId.batter: UpgradeDef('고급 반죽', '모든 와플 가격 +10%', 5, 320, 2.0),
   UpgradeId.tray: UpgradeDef('진열대 확장', '보관 칸 +2', 4, 150, 1.9),
   UpgradeId.decor: UpgradeDef('가게 꾸미기', '손님이 2초 더 기다려요', 4, 220, 1.9),
   UpgradeId.berry: UpgradeDef('딸기 토핑', '딸기 와플 주문을 받아요', 1, 700, 1, minStage: 1),
@@ -143,14 +143,29 @@ class Balance {
   static const star2Bonus = 0.1; // 목표 금액 대비 보너스
   static const star3Bonus = 0.25;
 
-  /// 하루 목표 매출. 시뮬레이션(tool/balance_sim.dart)으로 맞춘 곡선.
+  /// 하루 목표 매출의 기준점 (날짜, 목표). 사이 날짜는 직선으로 잇는다.
+  /// 시뮬레이션(tool/balance_sim.dart)의 '보통 플레이어' 매출 ÷ 1.5 근처로 맞췄고,
+  /// 동네 가게에서 수입이 잠시 정체되는 9~16일차는 완만하게 올린다.
+  static const goalAnchors = [
+    (1, 150), (5, 480), (9, 850), (13, 1050), (16, 1250),
+    (20, 1900), (25, 2700), (30, 3500), (35, 4300), (40, 4800),
+  ];
+
   static int goalForDay(int day) {
-    final d = day - 1;
-    return ((150 + 70 * d + 1.6 * d * d).clamp(0, 4600) / 10).round() * 10;
+    if (day >= goalAnchors.last.$1) return goalAnchors.last.$2;
+    for (var i = 1; i < goalAnchors.length; i++) {
+      final (d0, g0) = goalAnchors[i - 1];
+      final (d1, g1) = goalAnchors[i];
+      if (day <= d1) return ((g0 + (g1 - g0) * (day - d0) / (d1 - d0)) / 10).round() * 10;
+    }
+    return goalAnchors.last.$2;
   }
 
   /// 날짜가 지날수록 손님이 조금씩 급해진다.
   static double patienceForDay(int day) => max(8.0, basePatience - min(day * 0.2, 4.0));
+
+  /// 입소문: 날이 갈수록 손님이 조금씩 늘어난다(등장 간격 배율, 하루 1.2%씩 최대 25%).
+  static double wordOfMouth(int day) => max(0.75, 1 - 0.012 * (day - 1));
 
   static int trainCost(int level) => 150 * level;
   static const trainXp = 25;

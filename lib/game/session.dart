@@ -110,7 +110,8 @@ class Session {
   bool get trayFull => trayCount >= progress.trayCapacity;
   bool isGriddleOpen(int i) => i < progress.griddleCount;
   BakePhase phaseOf(int i) => griddles[i].phase(progress.bakeTime);
-  double get spawnInterval => Balance.baseSpawn * progress.spawnFactor * weatherDef.spawnFactor;
+  double get spawnInterval =>
+      Balance.baseSpawn * progress.spawnFactor * weatherDef.spawnFactor * Balance.wordOfMouth(day);
 
   Weather _rollWeather() {
     if (progress.day < 3) return Weather.sunny;

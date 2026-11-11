@@ -74,15 +74,17 @@ bool _act(Session s, Bot bot, Random rng, List<bool> wantPerfect) {
   return false;
 }
 
-/// 상점에서 살 수 있는 것 중 가장 싼 것부터 산다(가게 확장은 돈이 모이면 최우선).
-void shop(Progress p) {
+/// 상점 행동. 사람처럼 "다음 가게 확장이 며칠 안에 닿을 거리면 모은다"는 규칙을 쓴다.
+/// 그 외에는 살 수 있는 것 중 가장 싼 것부터 산다.
+void shop(Progress p, int lastIncome) {
   while (true) {
     if (p.canExpand) {
       p.expand();
       continue;
     }
-    // 확장이 가까우면(70% 이상 모았으면) 돈을 아낀다.
-    final saving = p.hasNextStage && p.money >= p.nextStageCost * 0.7;
+    // 지금 가진 돈 + 앞으로 [saveDays]일 수입으로 확장할 수 있으면 다른 지출을 멈춘다.
+    const saveDays = 2;
+    final saving = p.hasNextStage && p.money + lastIncome * saveDays >= p.nextStageCost;
     final options = <(int, void Function())>[];
     for (final id in UpgradeId.values) {
       if (p.canBuy(id)) options.add((p.costOf(id), () => p.buy(id)));
@@ -110,6 +112,9 @@ void main(List<String> args) {
     final rng = Random(bot.seed);
     final p = Progress();
     var attempts = 0, fails = 0, starSum = 0;
+    final stageDay = <int, int>{};
+    final starCount = [0, 0, 0, 0];
+    var maxedDay = 0;
     print('\n=== ${bot.name} (초당 ${bot.tapsPerSec}회, 퍼펙트 ${(bot.perfectRate * 100).round()}%) ===');
     print('시도  일차  단계  매출   목표  별  손님(판매/놓침)  보유금');
     while (p.day <= days && attempts < days * 3) {
@@ -124,13 +129,25 @@ void main(List<String> args) {
         fails++;
       }
       starSum += s.stars;
+      starCount[s.stars]++;
       final line = '${'$attempts'.padLeft(3)}  ${'$day'.padLeft(4)}  ${'${p.stage}'.padLeft(4)}'
           '  ${'${s.earned}'.padLeft(5)}  ${'${s.goal}'.padLeft(5)}  ${'★' * s.stars}${'·' * (3 - s.stars)}'
           '  ${'${s.served}/${s.lost}'.padLeft(8)}       ${p.money}';
       if (const bool.fromEnvironment('ALL') || day <= 12 || day % 4 == 0 || !s.success) print(line);
-      shop(p);
+      final before = p.stage;
+      shop(p, s.earned);
+      if (p.stage != before) stageDay[p.stage] = day;
+      if (maxedDay == 0 &&
+          !p.hasNextStage &&
+          UpgradeId.values.every(p.isMaxed) &&
+          StaffId.values.every((id) => p.staffLevel(id) >= staffMaxLevel)) {
+        maxedDay = day;
+      }
     }
     print('→ $attempts번 영업, 실패 $fails번, 평균 별 ${(starSum / attempts).toStringAsFixed(2)}, '
         '최종 ${p.day - 1}일 클리어, 단계 ${stageDefs[p.stage].name}');
+    print('   가게 확장: ${stageDay.entries.map((e) => '${stageDefs[e.key].name} ${e.value}일차').join(', ')}'
+        ' · 모든 성장 완료: ${maxedDay == 0 ? '미완료' : '$maxedDay일차'} · 남은 돈 ${p.money}원');
+    print('   별 분포: 실패 ${starCount[0]} / ★ ${starCount[1]} / ★★ ${starCount[2]} / ★★★ ${starCount[3]}');
   }
 }
