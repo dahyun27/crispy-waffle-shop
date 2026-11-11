@@ -8,122 +8,9 @@ import 'dart:ui';
 import 'config.dart';
 import 'pixel.dart';
 
+export 'people.dart';
+
 const ink = Color(0xFF3A2416);
-
-// ── 사람 (16x20) ───────────────────────────────────────────
-
-const personBase = [
-  '................',
-  '.....oooooo.....',
-  '...oohhhhhhoo...',
-  '..ohhhhhhhhhho..',
-  '.ohhhhhhhhhhhho.',
-  '.ohhhsssssshhho.',
-  '.ohhsssssssshho.',
-  '.ohssssssssssho.',
-  '.osswesssswesso.',
-  '.osswesssswesso.',
-  '.osssssssssssso.',
-  '..osssssssssso..',
-  '...oossssssoo...',
-  '..ooccccccccoo..',
-  '.occcccccccccco.',
-  '.osoccccccccoso.',
-  '.osoccccccccoso.',
-  '..ooccccccccoo..',
-  '...opppoopppo...',
-  '...oooo..oooo...',
-];
-
-/// 머리 모양별로 바꿔 끼우는 줄(줄 번호 → 내용).
-const hairStyles = <Map<int, String>>[
-  {}, // 짧은 머리
-  {8: '.ohswesssswesho.', 9: '.ohswesssswesho.'}, // 단발
-  {
-    2: '...ookkkkkkoo...',
-    3: '..okkkkkkkkkko..',
-    4: '.okkkkkkkkkkkko.',
-    5: '.oooooooooooooo.',
-  }, // 모자
-  {0: '..oo........oo..', 1: '.ohhoooooooohho.'}, // 양갈래
-];
-
-enum Mood { happy, neutral, angry }
-
-const moodRows = <Mood, Map<int, String>>{
-  Mood.happy: {10: '.osbsmssssmsbso.', 11: '..osssmmmmssso..'},
-  Mood.neutral: {11: '..ossssmmsssso..'},
-  Mood.angry: {10: '.ossssmmmmsssso.', 11: '..osssmssmssso..'},
-};
-
-/// 직원용: 조리 모자와 앞치마.
-const staffRows = <int, String>{
-  0: '....oooooooo....',
-  1: '...owwwwwwwwo...',
-  2: '...owwwwwwwwo...',
-  3: '..oowwwwwwwwoo..',
-  14: '.occcaaaaaaccco.',
-  15: '.osocaaaaaacoso.',
-  16: '.osocaaaaaacoso.',
-  17: '..oocaaaaaacoo..',
-};
-
-const _skins = [Color(0xFFFFDDBF), Color(0xFFF3C7A0), Color(0xFFD9A47C)];
-const _hairs = [
-  Color(0xFF4A3020), Color(0xFF2B2B38), Color(0xFFB5682E), Color(0xFFE2B84A), Color(0xFF8A4B6B),
-];
-const _shirts = [
-  Color(0xFF5B8DEF), Color(0xFF58B77A), Color(0xFFEF7B5B),
-  Color(0xFF9B6BDF), Color(0xFFE2B33C), Color(0xFF4FB8C4),
-];
-const _caps = [Color(0xFFE5484D), Color(0xFF3E6FB8), Color(0xFF3E9B6B)];
-
-List<String> _compose(List<Map<int, String>> overrides) {
-  final rows = [...personBase];
-  for (final o in overrides) {
-    o.forEach((i, row) => rows[i] = row);
-  }
-  return rows;
-}
-
-Map<String, Color> _palette(Color skin, Color hair, Color shirt, Color cap) => {
-      'o': ink,
-      'h': hair,
-      's': skin,
-      'w': const Color(0xFFFFFFFF),
-      'e': ink,
-      'm': const Color(0xFF8A3B2E),
-      'b': const Color(0xFFFF9C9C),
-      'c': shirt,
-      'p': const Color(0xFF4A5670),
-      'k': cap,
-      'a': const Color(0xFFFFF8EC),
-    };
-
-final _customerCache = <int, PixelSprite>{};
-
-/// 손님 그림. [look] 값으로 머리 모양과 색 조합이 정해진다.
-PixelSprite customerSprite(int look, Mood mood) {
-  final key = look * 3 + mood.index;
-  return _customerCache[key] ??= PixelSprite(
-    _compose([hairStyles[look % hairStyles.length], moodRows[mood]!]),
-    _palette(
-      _skins[(look ~/ 4) % _skins.length],
-      _hairs[(look ~/ 12) % _hairs.length],
-      _shirts[(look ~/ 60) % _shirts.length],
-      _caps[(look ~/ 7) % _caps.length],
-    ),
-  );
-}
-
-final staffSprites = {
-  StaffId.baker: PixelSprite(_compose([staffRows, moodRows[Mood.happy]!]),
-      _palette(_skins[0], _hairs[2], const Color(0xFFE9A93B), _caps[0])),
-  StaffId.topper: PixelSprite(_compose([hairStyles[1], staffRows, moodRows[Mood.happy]!]),
-      _palette(_skins[1], _hairs[4], const Color(0xFFE5486B), _caps[0])),
-  StaffId.server: PixelSprite(_compose([staffRows, moodRows[Mood.happy]!]),
-      _palette(_skins[2], _hairs[1], const Color(0xFF8A5A3C), _caps[0])),
-};
 
 // ── 와플 (13x13, 굽기 단계와 토핑에 따라 생성) ─────────────
 
@@ -441,11 +328,5 @@ final weatherSprites = {
   ], _iconPalette),
 };
 
-/// 테스트에서 줄 길이를 검사할 수 있게 모든 문자열 그림을 모아 둔다.
-List<List<String>> get allSpriteRows => [
-      personBase,
-      for (final h in hairStyles) _compose([h]),
-      for (final m in Mood.values) _compose([moodRows[m]!]),
-      _compose([staffRows]),
-      _starRows,
-    ];
+/// 테스트에서 줄 길이를 검사할 수 있게 문자열 그림을 모아 둔다.
+List<List<String>> get allSpriteRows => [_starRows];

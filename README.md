@@ -23,7 +23,8 @@ dart run tool/balance_sim.dart   # 밸런스 시뮬레이션(가상 플레이어
 | `lib/game/session.dart` | 하루 영업 규칙(굽기·토핑·판매·손님·이벤트·직원 행동) |
 | `lib/game/layout.dart` | 화면 배치 좌표 |
 | `lib/game/pixel.dart` | 도트 그림 엔진 |
-| `lib/game/sprites.dart` | 도트 그림 데이터(손님·직원·와플·아이콘) |
+| `lib/game/sprites.dart` | 도트 그림 데이터(와플·아이콘) |
+| `lib/game/people.dart` | 손님·직원 도트 그림 생성(머리 모양·옷·표정 조합) |
 | `lib/game/painter.dart` | 배경·손님·진열대·와플판 등 화면 그리기 |
 | `lib/game/waffle_game.dart` | Flame 게임 루프와 터치 처리, 조각·흔들림 연출 |
 | `lib/game/sfx.dart` | 효과음과 진동 |
