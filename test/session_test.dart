@@ -157,7 +157,8 @@ void main() {
     for (var d = 1; d < 60; d++) {
       expect(Balance.goalForDay(d + 1), greaterThanOrEqualTo(Balance.goalForDay(d)));
     }
-    expect(Balance.goalForDay(100), 4600);
+    expect(Balance.goalForDay(1), 150);
+    expect(Balance.goalForDay(100), Balance.goalAnchors.last.$2);
   });
 
   test('도트 그림의 모든 줄은 길이가 같다', () {
