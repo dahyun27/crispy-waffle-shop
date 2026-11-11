@@ -168,12 +168,13 @@ class WaffleGame extends FlameGame with TapCallbacks {
     drawGriddles(canvas, s, _time);
     drawStaff(canvas, s, _staffFlash);
     if (s.combo > 1) {
-      drawText(canvas, '콤보 x${s.combo}', 16, 96,
-          size: 16, color: const Color(0xFFFFE14D), anchor: Anchor.centerLeft, outline: ink, bold: true);
+      // 말풍선을 가리지 않도록 진열대 아래 줄에 표시한다.
+      drawText(canvas, '콤보 x${s.combo}', 12, 341,
+          color: const Color(0xFFFFE14D), anchor: Anchor.bottomLeft, outline: ink, bold: true);
     }
     if (s.rushing) {
-      drawText(canvas, '단체 손님! 1.5배', Layout.width - 16, 96,
-          color: const Color(0xFFFF9C8A), anchor: Anchor.centerRight, outline: ink, bold: true);
+      drawText(canvas, '단체 손님! 1.5배', Layout.width / 2, 341,
+          color: const Color(0xFFFF9C8A), anchor: Anchor.bottomCenter, outline: ink, bold: true);
     }
     for (final f in _floaters) {
       final alpha = (1.4 - f.age * 1.4).clamp(0.0, 1.0);

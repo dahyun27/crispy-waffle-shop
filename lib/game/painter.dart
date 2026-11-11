@@ -216,7 +216,7 @@ void drawCustomer(Canvas c, Rect r, Customer cu, Session s, double time) {
   final enter = ((1 - cu.age / 0.25).clamp(0.0, 1.0) * 24).roundToDouble();
   final x = (r.center.dx - 32 + wobble).roundToDouble();
   final y = 148.0 + enter;
-  customerSprite(cu.look, mood).draw(c, x, y, scale: 4);
+  customerSprite(cu.look, mood).draw(c, x, y);
   if (cu.vip) {
     // 큰손 손님의 왕관
     const gold = Color(0xFFFFD23F);
@@ -345,7 +345,7 @@ void drawStaff(Canvas c, Session s, Map<StaffId, double> flash) {
     final r = Layout.staff(id.index);
     final active = (flash[id] ?? 0) > 0;
     pixelBox(c, r, active ? const Color(0xFFFFF3A8) : _white, lo: const Color(0xFFE0D2B8));
-    staffSprites[id]!.draw(c, r.left + 6, r.top + 6 - (active ? 2 : 0), rows: 18);
+    staffSprites[id]!.draw(c, r.left + 6, r.top + 5 - (active ? 2 : 0), scale: 1);
     drawText(c, staffDefs[id]!.name, r.center.dx, r.top + 54);
     drawText(c, 'Lv${s.progress.staffLevel(id)}', r.center.dx, r.top + 70,
         color: const Color(0xFFB5682E), bold: true);
