@@ -172,6 +172,9 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
             style: _t(22, color: s.success ? _green : const Color(0xFFC4302B), bold: true)),
         Text('★' * s.stars + '☆' * (3 - s.stars), style: _t(26, color: _gold, bold: true)),
         Text(
+            '미션 「${s.mission.title}」 ${s.missionBonus > 0 ? '달성 +${s.missionBonus}원' : '실패'}',
+            style: _t(12, color: s.missionBonus > 0 ? _green : const Color(0xFF8A7B68), bold: true)),
+        Text(
             '매출 ${s.earned}원 / 목표 ${s.goal}원'
             '${s.starBonus > 0 ? '  (별 보너스 +${s.starBonus}원)' : ''}',
             style: _t(12, bold: true)),

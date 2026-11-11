@@ -122,7 +122,7 @@ void main(List<String> args) {
       final day = p.day;
       final s = Session(p, random: rng);
       playDay(s, bot, rng);
-      p.money += s.earned + s.starBonus;
+      p.money += s.earned + s.starBonus + s.missionBonus;
       if (s.success) {
         p.day++;
       } else {
