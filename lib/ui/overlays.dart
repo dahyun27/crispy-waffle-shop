@@ -100,25 +100,28 @@ class PixelIcon extends StatelessWidget {
     '...oo.o...o.',
     '....o.......',
   ];
+  // 휴대폰 양옆의 떨림 선은 여러 번 꺾이는 지그재그.
   static const vibration = [
-    'o..oooooo..o',
-    'o..o....o..o',
-    '.o.o....o.o.',
-    '.o.o....o.o.',
-    '.o.o....o.o.',
-    '.o.o....o.o.',
-    'o..o....o..o',
-    'o..oooooo..o',
+    '..o.oooooo.o..',
+    '.o..o....o..o.',
+    'o...o....o...o',
+    '.o..o....o..o.',
+    '..o.o....o.o..',
+    '.o..o....o..o.',
+    'o...o....o...o',
+    '.o..o....o..o.',
+    '..o.oooooo.o..',
   ];
   static const vibrationOff = [
-    '...oooooo...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...oooooo...',
+    '....oooooo....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....oooooo....',
   ];
 
   @override
@@ -168,8 +171,8 @@ class _SoundSettingsState extends State<SoundSettings> {
         widget.game.onSave();
       });
 
-  /// 설정 한 줄: 왼쪽에 아이콘과 이름, 오른쪽에 조절 장치.
-  Widget _row({required Widget icon, required String label, required VoidCallback onIconTap, required Widget control}) {
+  /// 설정 한 줄: 왼쪽에 아이콘, 오른쪽에 조절 장치.
+  Widget _row({required Widget icon, required VoidCallback onIconTap, required Widget control}) {
     return PixelPanel(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -177,11 +180,7 @@ class _SoundSettingsState extends State<SoundSettings> {
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onIconTap,
-          child: Row(children: [
-            Padding(padding: const EdgeInsets.all(4), child: icon),
-            const SizedBox(width: 6),
-            Text(label, style: _t(13, bold: true)),
-          ]),
+          child: Padding(padding: const EdgeInsets.all(4), child: icon),
         ),
         const Spacer(),
         control,
@@ -200,7 +199,6 @@ class _SoundSettingsState extends State<SoundSettings> {
       // 소리 줄: 아이콘을 누르면 음소거, 막대를 누르면 그 크기로.
       _row(
         icon: PixelIcon(sfx.muted ? PixelIcon.speakerMuted : PixelIcon.speaker, color: sfx.muted ? _off : _ink),
-        label: '소리',
         onIconTap: () => _change(sfx.toggleMute),
         control: Row(mainAxisSize: MainAxisSize.min, children: [
           for (var i = 1; i <= Sfx.maxVolumeLevel; i++)
@@ -227,7 +225,6 @@ class _SoundSettingsState extends State<SoundSettings> {
       // 진동 줄: 켜고 끄는 스위치.
       _row(
         icon: PixelIcon(sfx.haptics ? PixelIcon.vibration : PixelIcon.vibrationOff, color: sfx.haptics ? _ink : _off),
-        label: '진동',
         onIconTap: toggleHaptics,
         control: GestureDetector(
           behavior: HitTestBehavior.opaque,
