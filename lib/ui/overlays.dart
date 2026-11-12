@@ -384,7 +384,7 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
         ]),
         const SizedBox(height: 10),
         Row(children: [
-          for (final (i, label) in ['업그레이드', '직원', '가게 확장'].indexed)
+          for (final (i, label) in ['강화', '직원', '꾸미기', '확장'].indexed)
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
@@ -408,6 +408,7 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
             child: Column(children: switch (_tab) {
               0 => [for (final id in upgradeDefs.keys) _upgradeRow(p, id)],
               1 => [for (final id in StaffId.values) _staffRow(p, id)],
+              2 => _decorRows(p),
               _ => _stageRows(p),
             }),
           ),
@@ -479,6 +480,29 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
           width: 96, color: _green, onTap: p.canTrain(id) ? () => _do(() => p.train(id)) : null),
     );
   }
+
+  List<Widget> _decorRows(Progress p) => [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text('분위기 +${(p.charm * 100).round()}%  (와플 값이 그만큼 올라요)',
+              style: _t(12, color: _green, bold: true)),
+        ),
+        for (final id in DecorId.values)
+          _row(
+            title: '${decorDefs[id]!.name}  분위기 +${(decorDefs[id]!.charm * 100).round()}%',
+            desc: decorDefs[id]!.desc,
+            action: PixelButton(
+              p.hasDecor(id)
+                  ? '설치됨'
+                  : (p.stage < decorDefs[id]!.minStage
+                      ? '${decorDefs[id]!.minStage + 1}단계 필요'
+                      : '${decorDefs[id]!.cost}원'),
+              width: 96,
+              color: _gold,
+              onTap: p.canBuyDecor(id) ? () => _do(() => p.buyDecor(id)) : null,
+            ),
+          ),
+      ];
 
   List<Widget> _stageRows(Progress p) => [
         for (final (i, def) in stageDefs.indexed)

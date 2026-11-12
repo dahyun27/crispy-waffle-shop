@@ -89,6 +89,9 @@ void shop(Progress p, int lastIncome) {
     for (final id in UpgradeId.values) {
       if (p.canBuy(id)) options.add((p.costOf(id), () => p.buy(id)));
     }
+    for (final id in DecorId.values) {
+      if (p.canBuyDecor(id)) options.add((decorDefs[id]!.cost, () => p.buyDecor(id)));
+    }
     for (final id in StaffId.values) {
       if (p.canHire(id)) options.add((staffDefs[id]!.hireCost, () => p.hire(id)));
     }
@@ -140,6 +143,7 @@ void main(List<String> args) {
       if (maxedDay == 0 &&
           !p.hasNextStage &&
           UpgradeId.values.every(p.isMaxed) &&
+          DecorId.values.every(p.hasDecor) &&
           StaffId.values.every((id) => p.staffLevel(id) >= staffMaxLevel)) {
         maxedDay = day;
       }

@@ -250,7 +250,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
       final cu = s.customers[i];
       if (cu != null) drawCustomer(canvas, Layout.customer(i, count), cu, s, _time);
     }
-    drawShopFront(canvas, s);
+    drawShopFront(canvas, s, _time);
     for (var i = 0; i < count; i++) {
       final cu = s.customers[i];
       if (cu != null) drawPatience(canvas, Layout.customer(i, count), cu);

@@ -4,7 +4,7 @@ library;
 
 import 'dart:math';
 
-enum Topping { plain, choco, honey, berry, matcha, cream }
+enum Topping { plain, choco, honey, berry, matcha, cream, icecream }
 
 const toppingLabels = {
   Topping.plain: '기본',
@@ -13,6 +13,7 @@ const toppingLabels = {
   Topping.berry: '딸기',
   Topping.matcha: '말차',
   Topping.cream: '크림',
+  Topping.icecream: '아이스',
 };
 
 const toppingPrices = {
@@ -22,6 +23,7 @@ const toppingPrices = {
   Topping.berry: 50,
   Topping.matcha: 58,
   Topping.cream: 64,
+  Topping.icecream: 78,
 };
 
 // ── 가게 단계 ──────────────────────────────────────────────
@@ -46,7 +48,7 @@ const stageDefs = [
 
 // ── 업그레이드 ─────────────────────────────────────────────
 
-enum UpgradeId { heat, griddle, tray, batter, decor, sign, honey, berry, matcha, cream }
+enum UpgradeId { heat, griddle, tray, batter, decor, sign, honey, berry, matcha, cream, icecream }
 
 class UpgradeDef {
   const UpgradeDef(this.name, this.desc, this.maxLevel, this.baseCost, this.growth,
@@ -67,11 +69,35 @@ const upgradeDefs = {
   UpgradeId.sign: UpgradeDef('간판 홍보', '손님이 더 자주 와요', 5, 280, 1.8),
   UpgradeId.batter: UpgradeDef('고급 반죽', '모든 와플 가격 +10%', 5, 320, 2.0),
   UpgradeId.tray: UpgradeDef('진열대 확장', '보관 칸 +2', 4, 150, 1.9),
-  UpgradeId.decor: UpgradeDef('가게 꾸미기', '손님이 2초 더 기다려요', 4, 220, 1.9),
+  UpgradeId.decor: UpgradeDef('대기 의자', '손님이 2초 더 기다려요', 4, 220, 1.9),
   UpgradeId.honey: UpgradeDef('허니버터 토핑', '허니버터 와플 주문을 받아요', 1, 450, 1),
   UpgradeId.berry: UpgradeDef('딸기 토핑', '딸기 와플 주문을 받아요', 1, 700, 1, minStage: 1),
   UpgradeId.matcha: UpgradeDef('말차 토핑', '말차 와플 주문을 받아요', 1, 3200, 1, minStage: 2),
   UpgradeId.cream: UpgradeDef('크림 토핑', '크림 와플 주문을 받아요', 1, 5000, 1, minStage: 2),
+  UpgradeId.icecream: UpgradeDef('아이스크림 토핑', '아이스크림 와플 주문을 받아요', 1, 8000, 1, minStage: 2),
+};
+
+// ── 가게 꾸미기 ────────────────────────────────────────────
+
+/// 한 번 사면 가게 풍경에 계속 보이는 장식. 살 때마다 '분위기'가 올라 와플 값이 오른다.
+enum DecorId { planter, board, lights, balloons, showcase, neon }
+
+class DecorDef {
+  const DecorDef(this.name, this.desc, this.cost, this.minStage, this.charm);
+  final String name;
+  final String desc;
+  final int cost;
+  final int minStage;
+  final double charm; // 와플 가격에 더해지는 비율
+}
+
+const decorDefs = {
+  DecorId.planter: DecorDef('꽃 화단', '길가에 꽃이 피어요', 1800, 1, 0.02),
+  DecorId.board: DecorDef('입간판', '오늘의 메뉴를 세워 둬요', 2600, 1, 0.02),
+  DecorId.lights: DecorDef('꼬마전구', '천막 아래가 반짝여요', 4000, 2, 0.03),
+  DecorId.balloons: DecorDef('풍선 장식', '천막 끝에 풍선을 달아요', 5500, 2, 0.03),
+  DecorId.showcase: DecorDef('쇼케이스', '계산대에 케이크를 올려요', 7500, 2, 0.04),
+  DecorId.neon: DecorDef('네온 간판', '멀리서도 가게가 보여요', 10000, 2, 0.05),
 };
 
 // ── 직원 ───────────────────────────────────────────────────
@@ -160,7 +186,7 @@ class Balance {
   /// 동네 가게에서 수입이 잠시 정체되는 9~16일차는 완만하게 올린다.
   static const goalAnchors = [
     (1, 150), (5, 480), (9, 850), (13, 1050), (16, 1250),
-    (20, 2000), (25, 2900), (30, 3800), (35, 4600), (40, 5200),
+    (20, 2000), (25, 2900), (30, 3800), (35, 4600), (40, 5200), (50, 6000),
   ];
 
   static int goalForDay(int day) {
