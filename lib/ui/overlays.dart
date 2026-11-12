@@ -100,25 +100,28 @@ class PixelIcon extends StatelessWidget {
     '...oo.o...o.',
     '....o.......',
   ];
+  // 휴대폰 양옆의 떨림 선은 여러 번 꺾이는 지그재그.
   static const vibration = [
-    'o..oooooo..o',
-    'o..o....o..o',
-    '.o.o....o.o.',
-    '.o.o....o.o.',
-    '.o.o....o.o.',
-    '.o.o....o.o.',
-    'o..o....o..o',
-    'o..oooooo..o',
+    '..o.oooooo.o..',
+    '.o..o....o..o.',
+    'o...o....o...o',
+    '.o..o....o..o.',
+    '..o.o....o.o..',
+    '.o..o....o..o.',
+    'o...o....o...o',
+    '.o..o....o..o.',
+    '..o.oooooo.o..',
   ];
   static const vibrationOff = [
-    '...oooooo...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...o....o...',
-    '...oooooo...',
+    '....oooooo....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....o....o....',
+    '....oooooo....',
   ];
 
   @override
@@ -168,84 +171,94 @@ class _SoundSettingsState extends State<SoundSettings> {
         widget.game.onSave();
       });
 
+  /// 설정 한 줄: 왼쪽에 아이콘, 오른쪽에 조절 장치.
+  Widget _row({required Widget icon, required VoidCallback onIconTap, required Widget control}) {
+    return PixelPanel(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onIconTap,
+          child: Padding(padding: const EdgeInsets.all(4), child: icon),
+        ),
+        const Spacer(),
+        control,
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final sfx = widget.game.sfx;
-    return PixelPanel(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Row(children: [
-        // 소리: 아이콘을 누르면 음소거, 막대를 누르면 그 크기로.
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _change(sfx.toggleMute),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: PixelIcon(sfx.muted ? PixelIcon.speakerMuted : PixelIcon.speaker,
-                color: sfx.muted ? _off : _ink),
-          ),
-        ),
-        const SizedBox(width: 4),
-        for (var i = 1; i <= Sfx.maxVolumeLevel; i++)
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _change(() => sfx.setVolumeLevel(i)),
-            child: Container(
-              width: 20,
-              height: 30,
-              alignment: Alignment.bottomCenter,
+    void toggleHaptics() => _change(() {
+          sfx.haptics = !sfx.haptics;
+          sfx.haptic(Haptic.medium);
+        });
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      // 소리 줄: 아이콘을 누르면 음소거, 막대를 누르면 그 크기로.
+      _row(
+        icon: PixelIcon(sfx.muted ? PixelIcon.speakerMuted : PixelIcon.speaker, color: sfx.muted ? _off : _ink),
+        onIconTap: () => _change(sfx.toggleMute),
+        control: Row(mainAxisSize: MainAxisSize.min, children: [
+          for (var i = 1; i <= Sfx.maxVolumeLevel; i++)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _change(() => sfx.setVolumeLevel(i)),
               child: Container(
-                width: 14,
-                height: 6.0 + i * 4,
-                decoration: BoxDecoration(
-                  color: i <= sfx.volumeLevel ? _gold : const Color(0xFFE6DDD0),
-                  border: Border.all(color: i <= sfx.volumeLevel ? _ink : _off, width: 2),
+                width: 22,
+                height: 30,
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: 14,
+                  height: 6.0 + i * 4,
+                  decoration: BoxDecoration(
+                    color: i <= sfx.volumeLevel ? _gold : const Color(0xFFE6DDD0),
+                    border: Border.all(color: i <= sfx.volumeLevel ? _ink : _off, width: 2),
+                  ),
                 ),
               ),
             ),
-          ),
-        const Spacer(),
-        // 진동: 켜고 끄는 스위치.
-        GestureDetector(
+        ]),
+      ),
+      const SizedBox(height: 6),
+      // 진동 줄: 켜고 끄는 스위치.
+      _row(
+        icon: PixelIcon(sfx.haptics ? PixelIcon.vibration : PixelIcon.vibrationOff, color: sfx.haptics ? _ink : _off),
+        onIconTap: toggleHaptics,
+        control: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => _change(() {
-            sfx.haptics = !sfx.haptics;
-            sfx.haptic(Haptic.medium);
-          }),
-          child: Row(children: [
-            PixelIcon(sfx.haptics ? PixelIcon.vibration : PixelIcon.vibrationOff,
-                color: sfx.haptics ? _ink : _off),
-            const SizedBox(width: 8),
-            Container(
-              width: 52,
-              height: 26,
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: sfx.haptics ? _green : _off,
-                border: Border.all(color: _ink, width: 3),
-              ),
-              child: Stack(alignment: Alignment.center, children: [
-                Align(
-                  alignment: sfx.haptics ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Text(sfx.haptics ? 'ON' : 'OFF', style: _t(10, color: Colors.white, bold: true)),
-                  ),
-                ),
-                Align(
-                  alignment: sfx.haptics ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(color: Colors.white, border: Border.all(color: _ink, width: 2)),
-                  ),
-                ),
-              ]),
+          onTap: toggleHaptics,
+          child: Container(
+            width: 52,
+            height: 26,
+            margin: const EdgeInsets.symmetric(vertical: 2),
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: sfx.haptics ? _green : _off,
+              border: Border.all(color: _ink, width: 3),
             ),
-          ]),
+            child: Stack(alignment: Alignment.center, children: [
+              Align(
+                alignment: sfx.haptics ? Alignment.centerLeft : Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Text(sfx.haptics ? 'ON' : 'OFF', style: _t(10, color: Colors.white, bold: true)),
+                ),
+              ),
+              Align(
+                alignment: sfx.haptics ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(color: Colors.white, border: Border.all(color: _ink, width: 2)),
+                ),
+              ),
+            ]),
+          ),
         ),
-      ]),
-    );
+      ),
+    ]);
   }
 }
 
