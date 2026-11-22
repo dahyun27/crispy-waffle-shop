@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.crispy_waffle_shop"
+    namespace = "com.ddoo.crispywaffle"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.crispy_waffle_shop"
+        applicationId = "com.ddoo.crispywaffle"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
