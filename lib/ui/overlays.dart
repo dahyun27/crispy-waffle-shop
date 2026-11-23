@@ -329,12 +329,41 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
   bool _shop = false; // false: 결과 화면, true: 가게 정비 화면
   bool _ready = false; // 영업이 끝난 직후의 연타로 결과 화면이 바로 넘어가지 않게 잠깐 막는다.
 
+  int _starsShown = 0; // 결과 화면에서 지금까지 채워진 별 수
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) setState(() => _ready = true);
-    });
+    _revealStars();
+  }
+
+  /// 별을 하나씩 채우며 점점 높은 소리를 낸다. 다 채워진 뒤에야 버튼이 눌린다.
+  Future<void> _revealStars() async {
+    final game = widget.game;
+    final stars = game.session!.stars;
+    await Future.delayed(const Duration(milliseconds: 700));
+    for (var i = 1; i <= stars; i++) {
+      if (!mounted) return;
+      setState(() => _starsShown = i);
+      game.sfx.play('perfect${i * 2 - 1}');
+      game.sfx.haptic(i == 3 ? Haptic.medium : Haptic.light);
+      await Future.delayed(const Duration(milliseconds: 450));
+    }
+    await Future.delayed(Duration(milliseconds: stars == 0 ? 800 : 250));
+    if (mounted) setState(() => _ready = true);
+  }
+
+  /// 별 한 칸. 채워지는 순간 크게 튀었다가 제자리로 돌아온다.
+  Widget _star(int index) {
+    final filled = index < _starsShown;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('$index-$filled'),
+      tween: Tween(begin: filled ? 1.9 : 1.0, end: 1.0),
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+      child: Text(filled ? '★' : '☆', style: _t(40, color: filled ? _gold : const Color(0xFFCDBFA8), bold: true)),
+    );
   }
 
   void _do(bool Function() action) => setState(() {
@@ -367,7 +396,7 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
         const SizedBox(height: 2),
         Text(s.success ? '목표 달성!' : '목표 미달',
             style: _t(30, color: s.success ? _green : const Color(0xFFC4302B), bold: true)),
-        Text('★' * s.stars + '☆' * (3 - s.stars), style: _t(40, color: _gold, bold: true)),
+        Row(mainAxisSize: MainAxisSize.min, children: [for (var i = 0; i < 3; i++) _star(i)]),
         const SizedBox(height: 8),
         PixelPanel(
           color: Colors.white,
@@ -405,15 +434,24 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
             ),
         ]),
         const SizedBox(height: 14),
-        PixelButton('가게 정비하기',
-            big: true,
-            width: double.infinity,
-            onTap: _ready
-                ? () => setState(() {
-                      _shop = true;
-                      game.sfx.play('click');
-                    })
-                : null),
+        Row(children: [
+          Expanded(
+            child: PixelButton(s.success ? '가게 정비하기' : '가게 정비',
+                big: true,
+                color: s.success ? _pink : _green,
+                onTap: _ready
+                    ? () => setState(() {
+                          _shop = true;
+                          game.sfx.play('click');
+                        })
+                    : null),
+          ),
+          // 목표에 못 미쳤으면 정비 없이 곧바로 같은 날을 다시 할 수 있다.
+          if (!s.success) ...[
+            const SizedBox(width: 8),
+            Expanded(child: PixelButton('다시 도전', big: true, onTap: _ready ? game.startDay : null)),
+          ],
+        ]),
       ]),
     ));
   }
