@@ -50,21 +50,19 @@ bool _act(Session s, Bot bot, Random rng, List<bool> wantPerfect) {
       return true;
     }
   }
-  // 3) 필요한 토핑 올리기
-  final need = {for (final t in Topping.values) t: 0};
-  for (final c in s.customers) {
-    if (c != null) need[c.order] = need[c.order]! + c.remaining;
-  }
-  for (final t in Topping.values) {
-    if (t != Topping.plain && need[t]! > s.tray[t]! && s.tray[Topping.plain]! > 0) {
-      return s.applyTopping(t);
-    }
-  }
-  // 4) 빈 판에 반죽 붓기(진열대가 넘치지 않을 만큼만)
+  // 3) 빈 판에 반죽 붓기(진열대가 넘치지 않을 만큼만).
+  //    주문에 비해 가장 모자란 맛을 고르고, 모자란 것이 없으면 재고가 가장 적은 맛을 미리 굽는다.
+  //    맛을 바꾸는 것도 터치 한 번으로 센다.
   final baking = [for (var i = 0; i < p.griddleCount; i++) if (s.griddles[i].hasBatter) i].length;
   if (s.trayCount + baking < p.trayCapacity) {
     for (var i = 0; i < p.griddleCount; i++) {
       if (s.phaseOf(i) == BakePhase.empty) {
+        final short = s.shortage();
+        var want = p.unlockedToppings.first;
+        for (final t in p.unlockedToppings) {
+          if (short[t]! > short[want]!) want = t;
+        }
+        if (s.selected != want) return s.selectFlavor(want);
         s.tapGriddle(i);
         wantPerfect[i] = rng.nextDouble() < bot.perfectRate;
         return true;

@@ -288,8 +288,8 @@ class _TitleOverlayState extends State<TitleOverlay> {
           color: Colors.white,
           padding: const EdgeInsets.all(10),
           child: Text(
-            '1. 와플판을 눌러 반죽을 붓고\n   「지금!」일 때 꺼내면 퍼펙트\n'
-            '2. 진열대의 토핑 칸을 눌러 토핑 올리기\n'
+            '1. 진열대에서 구울 맛을 먼저 고르기\n'
+            '2. 와플판을 눌러 반죽을 붓고\n   「지금!」일 때 꺼내면 퍼펙트\n'
             '3. 손님을 눌러 주문한 와플 건네기\n'
             '퍼펙트를 이으면 콤보로 값이 올라요.\n'
             '번 돈으로 가게를 키우고 직원을 길러요.',
