@@ -93,7 +93,7 @@ class StaffDef {
 const staffDefs = {
   StaffId.baker: StaffDef('밀', '굽기 담당', '다 구워진 와플을 타기 전에 꺼내줘요', 500, 0,
       [2.6, 2.1, 1.6, 1.1, 0.5]),
-  StaffId.topper: StaffDef('라즈', '토핑 담당', '주문에 맞춰 토핑을 올려줘요', 1400, 1,
+  StaffId.topper: StaffDef('라즈', '반죽 담당', '주문을 보고 빈 판에 반죽을 부어줘요', 1400, 1,
       [3.6, 3.0, 2.4, 1.9, 1.4]),
   StaffId.server: StaffDef('모카', '서빙 담당', '준비된 와플을 손님께 건네줘요', 6000, 2,
       [3.8, 3.2, 2.6, 2.1, 1.6]),

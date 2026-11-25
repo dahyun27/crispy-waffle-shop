@@ -30,14 +30,26 @@ final _waffleCache = <int, PixelSprite>{};
 /// [step] 0=막 부은 반죽 … 7=노릇노릇 … 12=탐.
 PixelSprite waffleSprite(int step, [Topping topping = Topping.plain]) {
   step = step.clamp(0, waffleBurntStep);
-  return _waffleCache[step * 8 + topping.index] ??= _makeWaffle(step, topping);
+  return _waffleCache[step * 8 + topping.index] ??= _makeWaffle(step, topping, false);
+}
+
+/// 와플판 위에서 굽는 동안의 모습: 토핑 없이 반죽(플레인 또는 초코)만 보인다.
+PixelSprite batterSprite(int step, Topping flavor) {
+  step = step.clamp(0, waffleBurntStep);
+  final choco = flavor == Topping.choco;
+  return _waffleCache[1000 + step * 2 + (choco ? 1 : 0)] ??=
+      _makeWaffle(step, choco ? Topping.choco : Topping.plain, true);
 }
 
 /// 와플 한 변의 점 개수.
 const waffleSize = 24;
 
-PixelSprite _makeWaffle(int step, Topping topping) {
-  const raw = Color(0xFFFFF0BE), golden = Color(0xFFF2B441), burnt = Color(0xFF35221A);
+PixelSprite _makeWaffle(int step, Topping topping, bool bare) {
+  // 초코는 토핑이 아니라 반죽 자체가 다르다.
+  final choco = topping == Topping.choco;
+  final raw = choco ? const Color(0xFFC79A74) : const Color(0xFFFFF0BE);
+  final golden = choco ? const Color(0xFF8A5230) : const Color(0xFFF2B441);
+  const burnt = Color(0xFF35221A);
   final base = step <= waffleGoldenStep
       ? Color.lerp(raw, golden, step / waffleGoldenStep)!
       : Color.lerp(golden, burnt, (step - waffleGoldenStep) / (waffleBurntStep - waffleGoldenStep))!;
@@ -111,44 +123,35 @@ PixelSprite _makeWaffle(int step, Topping topping) {
     Color(0xFFFF8FB8), Color(0xFFFFE066), Color(0xFF8FE3C0), Color(0xFFFFFFFF), Color(0xFF8FC4FF),
   ];
 
+  if (bare) return PixelSprite.fromPixels(n, n, p);
+
   switch (topping) {
     case Topping.plain:
       break;
 
     case Topping.choco:
-      // 위에서 부어 흘러내리는 초코 글레이즈 + 화이트 초코 지그재그 + 스프링클 + 초코 조각.
-      const glint = Color(0xFFE0A874), top = Color(0xFF8A4E24), body = Color(0xFF5E3014);
-      const deep = Color(0xFF3A1B08), white = Color(0xFFFFF1D0);
-      final glaze = <int>{};
-      for (var x = 2; x <= 21; x++) {
-        var edge = (10.5 + 2.0 * sin(x * 0.8 + 0.4)).round();
-        if (x == 5 || x == 6) edge += 5;
-        if (x == 12 || x == 13) edge += 7;
-        if (x == 18 || x == 19) edge += 4;
-        edge = min(edge, 21);
-        for (var y = 2; y <= edge; y++) {
-          dot(x, y, y == edge ? deep : (y == edge - 1 ? body : (y <= 3 ? top : body)));
-          if (y < edge - 1) glaze.add(y * n + x);
-        }
-      }
-      for (final (x, y) in [(3, 4), (4, 3), (5, 3), (6, 3), (14, 3), (15, 3), (16, 4), (5, 13), (12, 15), (18, 12)]) {
-        dot(x, y, glint);
+      // 초코 반죽 와플: 슈가파우더, 화이트 초코 지그재그, 초코칩, 스프링클.
+      const white = Color(0xFFFFF6E0), chip = Color(0xFF3A1B08), chipHi = Color(0xFF6B3A1A);
+      for (final (x, y) in [(3, 3), (20, 3), (4, 19), (19, 20), (9, 2), (15, 21), (2, 11), (21, 9)]) {
+        dot(x, y, white);
       }
       for (var x = 3; x <= 20; x++) {
         final k = x % 6;
-        final y = 5 + (k < 3 ? k : 6 - k);
-        if (glaze.contains(y * n + x)) dot(x, y, white);
+        for (final top in [6, 13]) {
+          final y = top + (k < 3 ? k : 6 - k);
+          dot(x, y, white);
+        }
       }
-      for (final (i, (x, y)) in [(3, 9), (8, 10), (11, 9), (16, 10), (20, 8), (9, 4), (19, 4), (13, 12), (6, 11)].indexed) {
-        if (!glaze.contains(y * n + x)) continue;
+      const piece = ['hc.', 'ccd', '.dd'];
+      const pieceColors = {'h': chipHi, 'c': Color(0xFF52280F), 'd': chip};
+      for (final (x, y) in [(5, 10), (12, 4), (17, 10), (8, 17), (15, 17)]) {
+        stamp(x, y, piece, pieceColors);
+      }
+      for (final (i, (x, y)) in [(4, 15), (11, 11), (19, 6), (13, 19), (7, 5)].indexed) {
         dot(x, y, sprinkles[i % sprinkles.length]);
-        if (i.isEven && glaze.contains(y * n + x + 1)) dot(x + 1, y, sprinkles[i % sprinkles.length]);
+        dot(x + 1, y, sprinkles[i % sprinkles.length]);
       }
-      const chunk = ['hhh.', 'hccd', 'hccd', '.ddd'];
-      const chunkColors = {'h': Color(0xFFA86838), 'c': Color(0xFF6B3A1A), 'd': Color(0xFF2E1406)};
-      stamp(8, 17, chunk, chunkColors);
-      stamp(15, 18, chunk, chunkColors);
-      sparkle(17, 6);
+      sparkle(17, 5);
 
     case Topping.honey:
       // 윤기 나는 꿀이 넓게 퍼지고, 가운데에 녹아내리는 버터 한 조각.

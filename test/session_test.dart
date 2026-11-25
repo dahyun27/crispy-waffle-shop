@@ -37,12 +37,19 @@ void main() {
     expect(s.phaseOf(1), BakePhase.empty);
   });
 
-  test('토핑을 올려 주문에 맞게 판매하면 돈을 번다', () {
+  test('맛을 먼저 고르고 구우면 그 맛으로 나오고, 굽는 중에는 바뀌지 않는다', () {
     final s = newSession();
     s.tray[Topping.plain] = 1;
     s.addCustomer(Topping.choco);
-    expect(s.serve(0), isFalse); // 초코 와플이 아직 없음
-    expect(s.applyTopping(Topping.choco), isTrue);
+    expect(s.serve(0), isFalse); // 플레인만 있고 초코 와플이 없음
+    expect(s.selectFlavor(Topping.choco), isTrue);
+    s.tapGriddle(0);
+    expect(s.griddles[0].flavor, Topping.choco);
+    expect(s.selectFlavor(Topping.plain), isTrue); // 굽기 시작한 뒤 맛을 바꿔도
+    s.update(Balance.baseBakeTime + Balance.perfectWindow + 0.1); // 퍼펙트를 지나 '완성' 상태
+    s.tapGriddle(0);
+    expect(s.tray[Topping.choco], 1); // 처음 고른 초코로 나온다
+    expect(s.tray[Topping.plain], 1);
     expect(s.serve(0), isTrue);
     expect(s.earned, 41); // 34 + 팁 20%
     expect(s.customers[0], isNull);
@@ -70,8 +77,9 @@ void main() {
   test('잠긴 토핑·와플판·단계 제한', () {
     final p = Progress()..money = 99999;
     final s = newSession(p);
-    s.tray[Topping.plain] = 1;
-    expect(s.applyTopping(Topping.cream), isFalse);
+    expect(s.selectFlavor(Topping.cream), isFalse);
+    expect(s.selected, Topping.plain);
+    expect(s.pour(0, Topping.cream), isFalse);
     s.tapGriddle(8);
     expect(s.phaseOf(8), BakePhase.empty);
     expect(s.customers.length, 2);
@@ -105,16 +113,20 @@ void main() {
     expect(p.staff[StaffId.baker]!.xp, 1);
   });
 
-  test('직원: 토핑·서빙 담당이 주문을 스스로 처리한다', () {
+  test('직원: 반죽 담당이 주문에 맞는 맛을 붓고 서빙 담당이 건넨다', () {
     final p = Progress()
       ..stage = 2
       ..money = 99999;
     p.hire(StaffId.topper);
     p.hire(StaffId.server);
+    p.hire(StaffId.baker);
     final s = newSession(p);
-    s.tray[Topping.plain] = 1;
     s.addCustomer(Topping.choco);
-    for (var i = 0; i < 80; i++) {
+    for (var i = 0; i < 40; i++) {
+      s.update(0.1);
+    }
+    expect(s.griddles.where((g) => g.hasBatter).single.flavor, Topping.choco); // 필요한 만큼만 붓는다
+    for (var i = 0; i < 110; i++) {
       s.update(0.1);
     }
     expect(s.served, 1);
@@ -149,9 +161,12 @@ void main() {
     p.expand();
     expect(p.buy(UpgradeId.matcha), isTrue);
     final s = newSession(p);
-    s.tray[Topping.plain] = 2;
-    expect(s.applyTopping(Topping.honey), isTrue);
-    expect(s.applyTopping(Topping.matcha), isTrue);
+    expect(s.selectFlavor(Topping.honey), isTrue);
+    expect(s.selectFlavor(Topping.matcha), isTrue);
+    s.tapGriddle(0);
+    s.update(p.bakeTime + 0.1);
+    s.tapGriddle(0);
+    expect(s.tray[Topping.matcha], 1);
     s.addCustomer(Topping.matcha);
     expect(s.serve(0), isTrue);
   });
