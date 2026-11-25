@@ -101,7 +101,7 @@ void main() {
   });
 
   test('직원: 굽기 담당은 타기 전에 꺼내고 경험치를 얻는다', () {
-    final p = Progress()..money = 1000;
+    final p = Progress()..money = 5000;
     expect(p.hire(StaffId.baker), isTrue);
     final s = newSession(p);
     s.tapGriddle(0);
@@ -194,7 +194,7 @@ void main() {
   });
 
   test('저장/불러오기', () {
-    final p = Progress()..money = 5000;
+    final p = Progress()..money = 50000;
     p.expand();
     p.buy(UpgradeId.berry);
     p.hire(StaffId.baker);
@@ -210,7 +210,7 @@ void main() {
     for (var d = 1; d < 60; d++) {
       expect(Balance.goalForDay(d + 1), greaterThanOrEqualTo(Balance.goalForDay(d)));
     }
-    expect(Balance.goalForDay(1), 150);
+    expect(Balance.goalForDay(1), Balance.goalAnchors.first.$2);
     expect(Balance.goalForDay(100), Balance.goalAnchors.last.$2);
   });
 

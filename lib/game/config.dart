@@ -40,8 +40,8 @@ class StageDef {
 
 const stageDefs = [
   StageDef('골목 수레', '작은 수레에서 시작해요', 0, 2, 4, 1.0, 0),
-  StageDef('동네 가게', '손님 자리 3칸, 2개 주문 등장, 딸기 토핑 가능', 2200, 3, 6, 0.72, 0.3),
-  StageDef('와플 카페', '손님 자리 4칸, 와플판 9칸, 말차와 크림 토핑 가능', 6000, 4, 9, 0.6, 0.35),
+  StageDef('동네 가게', '손님 자리 3칸, 2개 주문 등장, 딸기 토핑 가능', 3400, 3, 6, 0.72, 0.3),
+  StageDef('와플 카페', '손님 자리 4칸, 와플판 9칸, 말차와 크림 토핑 가능', 9000, 4, 9, 0.6, 0.35),
 ];
 
 // ── 업그레이드 ─────────────────────────────────────────────
@@ -62,16 +62,16 @@ class UpgradeDef {
 }
 
 const upgradeDefs = {
-  UpgradeId.griddle: UpgradeDef('와플판 추가', '굽는 칸이 하나 늘어나요', 7, 160, 2.0),
-  UpgradeId.heat: UpgradeDef('화력 강화', '굽는 시간 -10%', 5, 240, 2.1),
-  UpgradeId.sign: UpgradeDef('간판 홍보', '손님이 더 자주 와요', 5, 280, 1.8),
-  UpgradeId.batter: UpgradeDef('고급 반죽', '모든 와플 가격 +10%', 5, 320, 2.0),
-  UpgradeId.tray: UpgradeDef('진열대 확장', '보관 칸 +2', 4, 150, 1.9),
-  UpgradeId.decor: UpgradeDef('가게 꾸미기', '손님이 2초 더 기다려요', 4, 220, 1.9),
-  UpgradeId.honey: UpgradeDef('허니버터 토핑', '허니버터 와플 주문을 받아요', 1, 450, 1),
-  UpgradeId.berry: UpgradeDef('딸기 토핑', '딸기 와플 주문을 받아요', 1, 700, 1, minStage: 1),
-  UpgradeId.matcha: UpgradeDef('말차 토핑', '말차 와플 주문을 받아요', 1, 3200, 1, minStage: 2),
-  UpgradeId.cream: UpgradeDef('크림 토핑', '크림 와플 주문을 받아요', 1, 5000, 1, minStage: 2),
+  UpgradeId.griddle: UpgradeDef('와플판 추가', '굽는 칸이 하나 늘어나요', 7, 700, 1.65),
+  UpgradeId.heat: UpgradeDef('화력 강화', '굽는 시간 -10%', 5, 900, 1.8),
+  UpgradeId.sign: UpgradeDef('간판 홍보', '손님이 더 자주 와요', 5, 950, 1.75),
+  UpgradeId.batter: UpgradeDef('고급 반죽', '모든 와플 가격 +10%', 5, 1000, 1.8),
+  UpgradeId.tray: UpgradeDef('진열대 확장', '보관 칸 +2', 4, 650, 1.7),
+  UpgradeId.decor: UpgradeDef('가게 꾸미기', '손님이 2초 더 기다려요', 4, 800, 1.8),
+  UpgradeId.honey: UpgradeDef('허니버터 토핑', '허니버터 와플 주문을 받아요', 1, 1300, 1),
+  UpgradeId.berry: UpgradeDef('딸기 토핑', '딸기 와플 주문을 받아요', 1, 2000, 1, minStage: 1),
+  UpgradeId.matcha: UpgradeDef('말차 토핑', '말차 와플 주문을 받아요', 1, 5500, 1, minStage: 2),
+  UpgradeId.cream: UpgradeDef('크림 토핑', '크림 와플 주문을 받아요', 1, 8500, 1, minStage: 2),
 };
 
 // ── 직원 ───────────────────────────────────────────────────
@@ -91,11 +91,11 @@ class StaffDef {
 }
 
 const staffDefs = {
-  StaffId.baker: StaffDef('밀', '굽기 담당', '다 구워진 와플을 타기 전에 꺼내줘요', 500, 0,
+  StaffId.baker: StaffDef('밀', '굽기 담당', '다 구워진 와플을 타기 전에 꺼내줘요', 1300, 0,
       [2.6, 2.1, 1.6, 1.1, 0.5]),
-  StaffId.topper: StaffDef('라즈', '반죽 담당', '주문을 보고 빈 판에 반죽을 부어줘요', 1400, 1,
+  StaffId.topper: StaffDef('라즈', '반죽 담당', '주문을 보고 빈 판에 반죽을 부어줘요', 3000, 1,
       [3.6, 3.0, 2.4, 1.9, 1.4]),
-  StaffId.server: StaffDef('모카', '서빙 담당', '준비된 와플을 손님께 건네줘요', 6000, 2,
+  StaffId.server: StaffDef('모카', '서빙 담당', '준비된 와플을 손님께 건네줘요', 10000, 2,
       [3.8, 3.2, 2.6, 2.1, 1.6]),
 };
 
@@ -159,8 +159,7 @@ class Balance {
   /// 시뮬레이션(tool/balance_sim.dart)의 '보통 플레이어' 매출 ÷ 1.5 근처로 맞췄고,
   /// 동네 가게에서 수입이 잠시 정체되는 9~16일차는 완만하게 올린다.
   static const goalAnchors = [
-    (1, 150), (5, 480), (9, 850), (13, 1050), (16, 1250),
-    (20, 2000), (25, 2900), (30, 3800), (35, 4600), (40, 5200),
+    (1, 200), (5, 520), (9, 780), (13, 950), (16, 1050), (20, 1300), (25, 1800), (30, 2500), (35, 3400), (40, 4400),
   ];
 
   static int goalForDay(int day) {
@@ -179,6 +178,6 @@ class Balance {
   /// 입소문: 날이 갈수록 손님이 조금씩 늘어난다(등장 간격 배율, 하루 1.2%씩 최대 25%).
   static double wordOfMouth(int day) => max(0.75, 1 - 0.012 * (day - 1));
 
-  static int trainCost(int level) => 150 * level;
+  static int trainCost(int level) => 250 * level;
   static const trainXp = 25;
 }
