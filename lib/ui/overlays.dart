@@ -326,14 +326,44 @@ class DayEndOverlay extends StatefulWidget {
 
 class _DayEndOverlayState extends State<DayEndOverlay> {
   int _tab = 0;
-  bool _ready = false; // 영업이 끝난 직후의 연타로 다음 날이 바로 시작되지 않게 잠깐 막는다.
+  bool _shop = false; // false: 결과 화면, true: 가게 정비 화면
+  bool _ready = false; // 영업이 끝난 직후의 연타로 결과 화면이 바로 넘어가지 않게 잠깐 막는다.
+
+  int _starsShown = 0; // 결과 화면에서 지금까지 채워진 별 수
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) setState(() => _ready = true);
-    });
+    _revealStars();
+  }
+
+  /// 별을 하나씩 채우며 점점 높은 소리를 낸다. 다 채워진 뒤에야 버튼이 눌린다.
+  Future<void> _revealStars() async {
+    final game = widget.game;
+    final stars = game.session!.stars;
+    await Future.delayed(const Duration(milliseconds: 700));
+    for (var i = 1; i <= stars; i++) {
+      if (!mounted) return;
+      setState(() => _starsShown = i);
+      game.sfx.play('perfect${i * 2 - 1}');
+      game.sfx.haptic(i == 3 ? Haptic.medium : Haptic.light);
+      await Future.delayed(const Duration(milliseconds: 450));
+    }
+    await Future.delayed(Duration(milliseconds: stars == 0 ? 800 : 250));
+    if (mounted) setState(() => _ready = true);
+  }
+
+  /// 별 한 칸. 채워지는 순간 크게 튀었다가 제자리로 돌아온다.
+  Widget _star(int index) {
+    final filled = index < _starsShown;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('$index-$filled'),
+      tween: Tween(begin: filled ? 1.9 : 1.0, end: 1.0),
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+      child: Text(filled ? '★' : '☆', style: _t(40, color: filled ? _gold : const Color(0xFFCDBFA8), bold: true)),
+    );
   }
 
   void _do(bool Function() action) => setState(() {
@@ -344,24 +374,45 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
       });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _shop ? _shopScreen() : _resultScreen();
+
+  /// 1단계: 오늘 영업 결과만 보여 준다.
+  Widget _resultScreen() {
     final game = widget.game;
     final s = game.session!;
     final p = game.progress;
+    final total = s.earned + s.starBonus + s.missionBonus;
+    Widget line(String label, String value, {Color? color, bool strong = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(children: [
+            Expanded(child: Text(label, style: _t(strong ? 14 : 12, color: color ?? _ink, bold: strong))),
+            Text(value, style: _t(strong ? 16 : 13, color: color ?? _ink, bold: true)),
+          ]),
+        );
     return _screen(PixelPanel(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.success ? '${s.day}일차 목표 달성!' : '${s.day}일차 목표 미달',
-            style: _t(22, color: s.success ? _green : const Color(0xFFC4302B), bold: true)),
-        Text('★' * s.stars + '☆' * (3 - s.stars), style: _t(26, color: _gold, bold: true)),
-        Text(
-            '미션 「${s.mission.title}」 ${s.missionBonus > 0 ? '달성 +${s.missionBonus}원' : '실패'}',
-            style: _t(12, color: s.missionBonus > 0 ? _green : const Color(0xFF8A7B68), bold: true)),
-        Text(
-            '매출 ${s.earned}원 / 목표 ${s.goal}원'
-            '${s.starBonus > 0 ? '  (별 보너스 +${s.starBonus}원)' : ''}',
-            style: _t(12, bold: true)),
-        const SizedBox(height: 6),
+        Text('${s.day}일차 영업 종료', style: _t(13, color: const Color(0xFF6B5340), bold: true)),
+        const SizedBox(height: 2),
+        Text(s.success ? '목표 달성!' : '목표 미달',
+            style: _t(30, color: s.success ? _green : const Color(0xFFC4302B), bold: true)),
+        Row(mainAxisSize: MainAxisSize.min, children: [for (var i = 0; i < 3; i++) _star(i)]),
+        const SizedBox(height: 8),
+        PixelPanel(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(children: [
+            line('매출 (목표 ${s.goal}원)', '${s.earned}원'),
+            line('별 보너스', s.starBonus > 0 ? '+${s.starBonus}원' : '없음',
+                color: s.starBonus > 0 ? _green : const Color(0xFF8A7B68)),
+            line('미션 「${s.mission.title}」', s.missionBonus > 0 ? '+${s.missionBonus}원' : '실패',
+                color: s.missionBonus > 0 ? _green : const Color(0xFF8A7B68)),
+            Container(height: 2, color: _ink, margin: const EdgeInsets.symmetric(vertical: 5)),
+            line('오늘 번 돈', '$total원', strong: true),
+            line('보유', '${p.money}원'),
+          ]),
+        ),
+        const SizedBox(height: 10),
         Row(children: [
           for (final (label, value) in [
             ('판매', s.served),
@@ -373,16 +424,51 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
             Expanded(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
-                padding: const EdgeInsets.symmetric(vertical: 3),
+                padding: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(color: Colors.white, border: Border.all(color: _ink, width: 2)),
                 child: Column(children: [
-                  Text('$value', style: _t(14, bold: true)),
+                  Text('$value', style: _t(16, bold: true)),
                   Text(label, style: _t(10, color: const Color(0xFF6B5340))),
                 ]),
               ),
             ),
         ]),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(
+            child: PixelButton(s.success ? '가게 정비하기' : '가게 정비',
+                big: true,
+                color: s.success ? _pink : _green,
+                onTap: _ready
+                    ? () => setState(() {
+                          _shop = true;
+                          game.sfx.play('click');
+                        })
+                    : null),
+          ),
+          // 목표에 못 미쳤으면 정비 없이 곧바로 같은 날을 다시 할 수 있다.
+          if (!s.success) ...[
+            const SizedBox(width: 8),
+            Expanded(child: PixelButton('다시 도전', big: true, onTap: _ready ? game.startDay : null)),
+          ],
+        ]),
+      ]),
+    ));
+  }
+
+  /// 2단계: 번 돈으로 가게를 정비하고 다음 영업을 시작한다.
+  Widget _shopScreen() {
+    final game = widget.game;
+    final s = game.session!;
+    final p = game.progress;
+    return _screen(PixelPanel(
+      padding: const EdgeInsets.all(12),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(children: [
+          Expanded(child: Text('가게 정비', style: _t(22, bold: true))),
+          Text('보유 ${p.money}원', style: _t(14, bold: true)),
+        ]),
+        const SizedBox(height: 8),
         Row(children: [
           for (final (i, label) in ['업그레이드', '직원', '가게 확장'].indexed)
             Expanded(
@@ -398,11 +484,6 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
             ),
         ]),
         const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text('보유 ${p.money}원', style: _t(14, bold: true)),
-        ),
-        const SizedBox(height: 4),
         Flexible(
           child: SingleChildScrollView(
             child: Column(children: switch (_tab) {
@@ -414,7 +495,14 @@ class _DayEndOverlayState extends State<DayEndOverlay> {
         ),
         const SizedBox(height: 12),
         PixelButton(s.success ? '${p.day}일차 영업 시작' : '${p.day}일차 다시 도전',
-            big: true, width: double.infinity, onTap: _ready ? game.startDay : null),
+            big: true, width: double.infinity, onTap: game.startDay),
+        const SizedBox(height: 8),
+        PixelButton('오늘 결과 다시 보기',
+            color: const Color(0xFF8A7B68),
+            onTap: () => setState(() {
+                  _shop = false;
+                  game.sfx.play('click');
+                })),
       ]),
     ));
   }
