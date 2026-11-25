@@ -364,19 +364,24 @@ void drawTray(Canvas c, Session s, [Map<Topping, double> bump = const {}]) {
     final r = Layout.tray(t.index);
     final unlocked = s.progress.isUnlocked(t);
     final count = s.tray[t]!;
-    pixelBox(c, r, unlocked ? _white : const Color(0xFFD9CFC0),
+    final picked = unlocked && s.selected == t;
+    if (picked) {
+      // 지금 고른 맛: 주황 테두리로 강조한다.
+      px(c, r.left - 3, r.top - 3, r.width + 6, r.height + 6, const Color(0xFFFF7A1A));
+    }
+    pixelBox(c, r, unlocked ? (picked ? const Color(0xFFFFF1C9) : _white) : const Color(0xFFD9CFC0),
         hi: unlocked ? null : const Color(0xFFE6DDD0), lo: const Color(0xFFE0D2B8));
     if (!unlocked) {
       lockSprite.draw(c, r.center.dx - 9, r.top + 18, opacity: 0.6);
     } else {
       final hop = (sin((bump[t] ?? 0) * pi) * 4).round() * 2.0;
-      waffleSprite(waffleGoldenStep, t).draw(c, r.center.dx - 24, r.top + 4 - hop, opacity: count > 0 ? 1 : 0.3);
+      waffleSprite(waffleGoldenStep, t).draw(c, r.center.dx - 24, r.top + 4 - hop, opacity: count > 0 || picked ? 1 : 0.3);
       final badge = Rect.fromLTWH(r.right - 22, r.top - 5, 24, 18);
       pixelBox(c, badge, count > 0 ? const Color(0xFFE5484D) : const Color(0xFFB8AC9A));
       drawText(c, '$count', badge.center.dx, badge.center.dy, color: _white, bold: true);
     }
     drawText(c, toppingLabels[t]!, r.center.dx, r.bottom - 10,
-        color: unlocked ? ink : const Color(0xFF8A7B68));
+        color: unlocked ? ink : const Color(0xFF8A7B68), bold: picked);
   }
   drawText(c, '진열대 ${s.trayCount}/${s.progress.trayCapacity}', Layout.width - 14, 341,
       color: s.trayFull ? const Color(0xFFE5484D) : const Color(0xFF8A6A4A), anchor: Anchor.bottomRight);
@@ -418,7 +423,13 @@ void drawGriddles(Canvas c, Session s, double time) {
       BakePhase.done => waffleGoldenStep + 1 + (after / doneSpan * 3).floor(),
       _ => waffleBurntStep,
     };
-    waffleSprite(step).draw(c, r.left + 8, r.top + 3, scale: 3);
+    batterSprite(step, g.flavor).draw(c, r.left + 8, r.top + 3, scale: 3);
+    // 어떤 맛으로 굽는 중인지 알려 주는 작은 표식(플레인은 생략).
+    if (g.flavor != Topping.plain && phase != BakePhase.burnt) {
+      final tag = Rect.fromLTWH(r.right - 32, r.top + 2, 30, 30);
+      pixelBox(c, tag, _white);
+      waffleSprite(waffleGoldenStep, g.flavor).draw(c, tag.left + 3, tag.top + 3, scale: 1);
+    }
     final bar = Rect.fromLTWH(r.left + 10, r.bottom - 12, 68, 10);
     switch (phase) {
       case BakePhase.baking:

@@ -140,7 +140,7 @@ class WaffleGame extends FlameGame with TapCallbacks {
     for (final e in s.events) {
       if (e.type == FxType.staff) {
         _staffFlash[e.staff!] = 0.35;
-        if (e.staff == StaffId.baker) _trayBump[Topping.plain] = _bumpTime;
+        if (e.staff == StaffId.baker) _trayBump[e.topping ?? Topping.plain] = _bumpTime;
         continue;
       }
       if (e.type == FxType.mission) {
@@ -192,11 +192,11 @@ class WaffleGame extends FlameGame with TapCallbacks {
         sfx.perfect(e.amount);
         sfx.haptic(Haptic.light);
         _burst(at, const [Color(0xFFFFE14D), Color(0xFFFFFFFF), Color(0xFFFFB636)], 12, 150);
-        _trayBump[Topping.plain] = _bumpTime;
+        _trayBump[e.topping ?? Topping.plain] = _bumpTime;
       case FxType.good:
         sfx.play('good');
         _burst(at, const [Color(0xFFFFFFFF), Color(0xFFE9D9B8)], 5, 90);
-        _trayBump[Topping.plain] = _bumpTime;
+        _trayBump[e.topping ?? Topping.plain] = _bumpTime;
       case FxType.tooEarly:
         sfx.play('early', volume: 0.65);
       case FxType.burnt:
@@ -307,8 +307,9 @@ class WaffleGame extends FlameGame with TapCallbacks {
     }
     for (final t in Topping.values) {
       if (Layout.tray(t.index).inflate(3).contains(p)) {
-        if (s.applyTopping(t)) {
+        if (s.selected != t && s.selectFlavor(t)) {
           sfx.play('topping');
+          sfx.haptic(Haptic.tick);
           _trayBump[t] = _bumpTime;
         }
         return;

@@ -11,6 +11,7 @@ enum BakePhase { empty, baking, perfect, done, burnt }
 class Griddle {
   bool hasBatter = false;
   double t = 0;
+  Topping flavor = Topping.plain; // 반죽을 부을 때 정해지고, 굽는 동안에는 바꿀 수 없다.
 
   BakePhase phase(double bakeTime) {
     if (!hasBatter) return BakePhase.empty;
@@ -45,12 +46,13 @@ enum FxType { perfect, good, tooEarly, burnt, trayFull, served, setBonus, lost, 
 
 /// 화면 연출(떠오르는 글자 등)을 위해 로직이 남기는 사건 기록.
 class Fx {
-  Fx(this.type, {this.griddle, this.slot, this.amount = 0, this.staff});
+  Fx(this.type, {this.griddle, this.slot, this.amount = 0, this.staff, this.topping});
   final FxType type;
   final int? griddle;
   final int? slot;
   final int amount;
   final StaffId? staff;
+  final Topping? topping; // 진열대로 옮겨진 와플의 맛
 }
 
 /// 하루에 하나 주어지는 추가 목표. 달성하면 정산 때 보너스를 받는다.
@@ -118,6 +120,9 @@ class Session {
   final griddles = List.generate(Balance.griddleSlots, (_) => Griddle());
   late final List<Customer?> customers;
   final tray = {for (final t in Topping.values) t: 0};
+
+  /// 지금 고른 맛. 빈 와플판을 누르면 이 맛으로 굽기 시작한다.
+  Topping selected = Topping.plain;
   final List<Fx> events = [];
   final _staffTimer = {for (final id in StaffId.values) id: 0.0};
 
@@ -181,14 +186,33 @@ class Session {
 
   // ── 플레이어 조작 ──
 
-  /// 와플판 탭: 빈 칸이면 반죽 붓기, 다 구워졌으면 꺼내기, 탔으면 버리기.
+  /// 진열대의 맛 칸 탭: 다음에 구울 맛을 고른다. 이미 굽고 있는 와플에는 영향이 없다.
+  bool selectFlavor(Topping t) {
+    if (finished || !progress.isUnlocked(t)) return false;
+    selected = t;
+    return true;
+  }
+
+  /// 빈 와플판에 [flavor] 맛 반죽을 붓는다.
+  bool pour(int i, Topping flavor) {
+    if (finished || !isGriddleOpen(i) || !progress.isUnlocked(flavor)) return false;
+    final g = griddles[i];
+    if (g.hasBatter) return false;
+    g
+      ..hasBatter = true
+      ..t = 0
+      ..flavor = flavor;
+    return true;
+  }
+
+  /// 와플판 탭: 빈 칸이면 고른 맛으로 반죽 붓기, 다 구워졌으면 꺼내기, 탔으면 버리기.
   void tapGriddle(int i) {
     if (finished || !isGriddleOpen(i)) return;
     final g = griddles[i];
+    final flavor = g.flavor;
     switch (phaseOf(i)) {
       case BakePhase.empty:
-        g.hasBatter = true;
-        g.t = 0;
+        pour(i, selected);
       case BakePhase.baking:
         events.add(Fx(FxType.tooEarly, griddle: i));
       case BakePhase.perfect:
@@ -196,12 +220,12 @@ class Session {
           combo++;
           perfects++;
           bestCombo = max(bestCombo, combo);
-          events.add(Fx(FxType.perfect, griddle: i, amount: combo));
+          events.add(Fx(FxType.perfect, griddle: i, amount: combo, topping: flavor));
         }
       case BakePhase.done:
         if (_toTray(i)) {
           combo = 0;
-          events.add(Fx(FxType.good, griddle: i));
+          events.add(Fx(FxType.good, griddle: i, topping: flavor));
         }
       case BakePhase.burnt:
         g.clear();
@@ -213,17 +237,9 @@ class Session {
       events.add(Fx(FxType.trayFull, griddle: i));
       return false;
     }
-    tray[Topping.plain] = tray[Topping.plain]! + 1;
+    final flavor = griddles[i].flavor;
+    tray[flavor] = tray[flavor]! + 1;
     griddles[i].clear();
-    return true;
-  }
-
-  /// 진열대의 토핑 칸 탭: 기본 와플 하나에 토핑을 올린다.
-  bool applyTopping(Topping t) {
-    if (finished || t == Topping.plain || !progress.isUnlocked(t)) return false;
-    if (tray[Topping.plain]! <= 0) return false;
-    tray[Topping.plain] = tray[Topping.plain]! - 1;
-    tray[t] = tray[t]! + 1;
     return true;
   }
 
@@ -330,9 +346,10 @@ class Session {
       // 굽기 담당: 다 구워지고 일정 시간이 지나면 대신 꺼낸다(콤보에는 영향 없음).
       if (hasBaker && !trayFull && after != BakePhase.burnt &&
           g.t >= bake + progress.staffValue(StaffId.baker)) {
-        tray[Topping.plain] = tray[Topping.plain]! + 1;
+        final flavor = g.flavor;
+        tray[flavor] = tray[flavor]! + 1;
         g.clear();
-        _staffWorked(StaffId.baker, griddle: i);
+        _staffWorked(StaffId.baker, griddle: i, topping: flavor);
       }
     }
   }
@@ -361,17 +378,16 @@ class Session {
   }
 
   void _updateStaff(double dt) {
-    // 토핑 담당: 기다리는 주문에 비해 모자란 토핑 와플을 하나씩 만든다.
+    // 반죽 담당: 기다리는 주문에 비해 모자란 맛을 골라 빈 판에 부어 준다.
     if (progress.isWorking(StaffId.topper) && _tick(StaffId.topper, dt)) {
-      final need = {for (final t in Topping.values) t: 0};
-      for (final c in customers) {
-        if (c != null) need[c.order] = need[c.order]! + c.remaining;
-      }
-      for (final t in Topping.values.reversed) {
-        if (t == Topping.plain || need[t]! <= tray[t]!) continue;
-        if (tray[Topping.plain]! > need[Topping.plain]! && applyTopping(t)) {
-          _staffWorked(StaffId.topper);
-          break;
+      final short = shortage();
+      final empty = [for (var i = 0; i < progress.griddleCount; i++) if (!griddles[i].hasBatter) i];
+      if (empty.isNotEmpty) {
+        for (final t in Topping.values.reversed) {
+          if (short[t]! > 0 && pour(empty.first, t)) {
+            _staffWorked(StaffId.topper, griddle: empty.first);
+            break;
+          }
         }
       }
     }
@@ -393,9 +409,22 @@ class Session {
     return _staffTimer[id]! >= progress.staffValue(id);
   }
 
-  void _staffWorked(StaffId id, {int? griddle}) {
+  void _staffWorked(StaffId id, {int? griddle, Topping? topping}) {
     _staffTimer[id] = 0;
     progress.staff[id]!.xp++;
-    events.add(Fx(FxType.staff, staff: id, griddle: griddle));
+    events.add(Fx(FxType.staff, staff: id, griddle: griddle, topping: topping));
+  }
+
+  /// 맛별로 '기다리는 주문 - (진열대 + 굽는 중)'. 0보다 크면 그만큼 더 구워야 한다.
+  Map<Topping, int> shortage() {
+    final short = {for (final t in Topping.values) t: -tray[t]!};
+    for (final c in customers) {
+      if (c != null) short[c.order] = short[c.order]! + c.remaining;
+    }
+    for (var i = 0; i < progress.griddleCount; i++) {
+      final g = griddles[i];
+      if (g.hasBatter && phaseOf(i) != BakePhase.burnt) short[g.flavor] = short[g.flavor]! - 1;
+    }
+    return short;
   }
 }
