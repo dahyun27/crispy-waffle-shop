@@ -34,6 +34,7 @@ class Progress {
   int stars = 0;
   final Map<UpgradeId, int> levels = {for (final id in UpgradeId.values) id: 0};
   final Map<StaffId, StaffState> staff = {for (final id in StaffId.values) id: StaffState()};
+  final Set<DecorId> decors = {};
 
   int level(UpgradeId id) => levels[id] ?? 0;
   StageDef get stageDef => stageDefs[stage];
@@ -43,7 +44,10 @@ class Progress {
   int get griddleCount =>
       min(Balance.startGriddles + level(UpgradeId.griddle), stageDef.griddleCap);
   int get trayCapacity => 4 + 2 * level(UpgradeId.tray);
-  double get priceMultiplier => 1 + 0.1 * level(UpgradeId.batter);
+  double get priceMultiplier => 1 + 0.1 * level(UpgradeId.batter) + charm;
+
+  /// 꾸미기 장식으로 얻은 분위기(와플 가격에 더해지는 비율).
+  double get charm => decors.fold(0.0, (sum, id) => sum + decorDefs[id]!.charm);
   double get patienceBonus => 2.0 * level(UpgradeId.decor);
   double get spawnFactor => stageDef.spawnFactor * pow(0.92, level(UpgradeId.sign));
 
@@ -53,6 +57,7 @@ class Progress {
         Topping.berry => level(UpgradeId.berry) > 0,
         Topping.matcha => level(UpgradeId.matcha) > 0,
         Topping.cream => level(UpgradeId.cream) > 0,
+        Topping.icecream => level(UpgradeId.icecream) > 0,
       };
 
   List<Topping> get unlockedToppings => Topping.values.where(isUnlocked).toList();
@@ -78,6 +83,18 @@ class Progress {
     if (!canBuy(id)) return false;
     money -= costOf(id);
     levels[id] = level(id) + 1;
+    return true;
+  }
+
+  // ── 가게 꾸미기 ──
+  bool hasDecor(DecorId id) => decors.contains(id);
+  bool canBuyDecor(DecorId id) =>
+      !hasDecor(id) && stage >= decorDefs[id]!.minStage && money >= decorDefs[id]!.cost;
+
+  bool buyDecor(DecorId id) {
+    if (!canBuyDecor(id)) return false;
+    money -= decorDefs[id]!.cost;
+    decors.add(id);
     return true;
   }
 
@@ -125,6 +142,7 @@ class Progress {
         'stage': stage,
         'stars': stars,
         'levels': {for (final e in levels.entries) e.key.name: e.value},
+        'decors': [for (final id in decors) id.name],
         'staff': {
           for (final e in staff.entries) e.key.name: {'hired': e.value.hired, 'xp': e.value.xp}
         },
@@ -143,6 +161,8 @@ class Progress {
       for (final id in UpgradeId.values) {
         p.levels[id] = (lv[id.name] as int? ?? 0).clamp(0, upgradeDefs[id]!.maxLevel);
       }
+      final owned = (map['decors'] as List<dynamic>? ?? const []).toSet();
+      p.decors.addAll(DecorId.values.where((id) => owned.contains(id.name)));
       final st = map['staff'] as Map<String, dynamic>? ?? {};
       for (final id in StaffId.values) {
         final s = st[id.name] as Map<String, dynamic>?;

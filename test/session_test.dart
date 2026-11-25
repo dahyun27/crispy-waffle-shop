@@ -227,6 +227,30 @@ void main() {
     expect(sfx.volumeLevel, Sfx.maxVolumeLevel);
   });
 
+  test('꾸미기: 단계 조건, 분위기만큼 값이 오르고 저장된다', () {
+    final p = Progress()..money = 100000;
+    expect(p.canBuyDecor(DecorId.planter), isFalse); // 1단계(수레)에서는 못 산다
+    p.stage = 2;
+    final before = p.priceMultiplier;
+    expect(p.buyDecor(DecorId.planter), isTrue);
+    expect(p.buyDecor(DecorId.planter), isFalse); // 같은 장식은 한 번만
+    expect(p.money, 100000 - decorDefs[DecorId.planter]!.cost);
+    expect(p.priceMultiplier, closeTo(before + decorDefs[DecorId.planter]!.charm, 1e-9));
+    final loaded = Progress.decode(p.encode());
+    expect(loaded.hasDecor(DecorId.planter), isTrue);
+    expect(loaded.hasDecor(DecorId.neon), isFalse);
+    expect(Progress.decode('{"money":5}').decors, isEmpty); // 예전 저장 파일도 열린다
+  });
+
+  test('아이스크림 토핑은 사야 열린다', () {
+    final p = Progress()
+      ..money = 100000
+      ..stage = 2;
+    expect(p.isUnlocked(Topping.icecream), isFalse);
+    expect(p.buy(UpgradeId.icecream), isTrue);
+    expect(p.unlockedToppings, contains(Topping.icecream));
+  });
+
   test('도트 그림의 모든 줄은 길이가 같다', () {
     for (final rows in allSpriteRows) {
       for (final row in rows) {

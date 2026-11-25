@@ -313,6 +313,56 @@ PixelSprite _makeWaffle(int step, Topping topping, bool bare) {
       dot(14, 1, const Color(0xFF3E7A3A));
       dot(15, 1, const Color(0xFF4FA35A));
       sparkle(5, 8);
+
+    case Topping.icecream:
+      // 초코 시럽 위에 바닐라, 민트초코, 딸기 세 스쿱 + 와플 과자 + 스프링클.
+      const syrup = Color(0xFF5E3014), syrupDeep = Color(0xFF3A1B08);
+      for (var x = 2; x <= 21; x++) {
+        final k = x % 6;
+        for (final top in [3, 18]) {
+          final y = top + (k < 3 ? k : 6 - k);
+          dot(x, y, syrup);
+          dot(x, y + 1, syrupDeep);
+        }
+      }
+      void scoop(double cx, double cy, double r, Color base, Color light, Color shade, Color line) {
+        ellipse(cx, cy, r, r * 0.92, (dx, dy, d) {
+          if (d > 0.8) return line;
+          if (dy > 0.4 || dx > 0.55) return shade;
+          return dx + dy < -0.45 ? light : base;
+        });
+        // 스쿱 아래쪽의 울퉁불퉁한 가장자리
+        for (var k = -2; k <= 2; k += 2) {
+          dot((cx + k * 1.6).round(), (cy + r * 0.92).round(), line);
+        }
+      }
+      // 뒤에 꽂힌 와플 과자
+      for (var k = 0; k <= 9; k++) {
+        final x = (15 + k * 0.6).round(), y = (11 - k).round();
+        dot(x, y, const Color(0xFFF0CC88));
+        dot(x + 1, y, k.isEven ? const Color(0xFFC89A50) : const Color(0xFFE2B66A));
+        dot(x + 2, y, const Color(0xFF9A6A2A));
+      }
+      scoop(7.0, 14.5, 5.0, const Color(0xFFFFF0C2), const Color(0xFFFFFFFF), const Color(0xFFE8CF8E), const Color(0xFFB8964A));
+      scoop(16.0, 14.5, 5.0, const Color(0xFF9FE3C4), const Color(0xFFD8FBEA), const Color(0xFF6CC09C), const Color(0xFF3E8A6A));
+      scoop(11.5, 8.4, 5.2, const Color(0xFFFF9EBB), const Color(0xFFFFD6E2), const Color(0xFFE86E94), const Color(0xFFB03A62));
+      // 민트초코의 초코 칩, 바닐라의 스프링클
+      for (final (x, y) in [(14, 13), (17, 15), (15, 16), (18, 12)]) {
+        dot(x, y, syrupDeep);
+      }
+      for (final (i, (x, y)) in [(5, 13), (8, 15), (6, 16), (9, 12)].indexed) {
+        dot(x, y, sprinkles[(i * 2) % sprinkles.length == 3 ? 0 : (i * 2) % sprinkles.length]);
+      }
+      // 맨 위 스쿱에 흘러내리는 초코 시럽
+      for (var x = 8; x <= 15; x++) {
+        final drip = (x == 9 || x == 13) ? 3 : (x == 11 ? 2 : 1);
+        for (var y = 4; y <= 4 + drip; y++) {
+          dot(x, y, y == 4 + drip ? syrupDeep : syrup);
+        }
+      }
+      dot(9, 5, const Color(0xFFA86838));
+      dot(10, 4, const Color(0xFFA86838));
+      sparkle(6, 9);
   }
   return PixelSprite.fromPixels(n, n, p);
 }

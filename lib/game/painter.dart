@@ -121,6 +121,37 @@ void drawScene(Canvas c, Session s, double time) {
   px(c, 286, ground - 64, 4, 70, const Color(0xFF4A5670));
   px(c, 278, ground - 70, 20, 8, const Color(0xFF4A5670));
   px(c, 282, ground - 62, 12, 6, const Color(0xFFFFE9A0));
+  // 길가 장식(손님 뒤에 그려진다)
+  final p = s.progress;
+  if (p.hasDecor(DecorId.planter)) {
+    const petals = [Color(0xFFFF8FB8), Color(0xFFFFE066), Color(0xFFFFFFFF), Color(0xFFFF7A6B)];
+    for (final (n, x) in [70.0, 124.0, 178.0, 232.0].indexed) {
+      px(c, x, ground - 8, 40, 8, const Color(0xFF9A6240));
+      px(c, x, ground - 8, 40, 2, const Color(0xFFC08A5C));
+      px(c, x + 2, ground - 12, 36, 4, const Color(0xFF4FA35A));
+      for (var k = 0; k < 5; k++) {
+        final fx = x + 3 + k * 7.0;
+        px(c, fx + 1, ground - 14, 2, 2, const Color(0xFF3A8046));
+        px(c, fx, ground - 18, 4, 4, petals[(n + k) % petals.length]);
+        px(c, fx + 1, ground - 17, 2, 2, const Color(0xFFFFF3B8));
+      }
+    }
+  }
+  if (p.hasDecor(DecorId.board)) {
+    // 손님 사이 빈틈에 세운다.
+    final slots = p.stageDef.customerSlots;
+    final x = Layout.customer(slots - 2, slots).right - 13;
+    final y = ground + 6;
+    px(c, x, y, 26, 34, const Color(0xFF7A5234));
+    px(c, x + 2, y + 2, 22, 26, const Color(0xFF2F4A3A));
+    px(c, x + 5, y + 5, 16, 2, _white);
+    px(c, x + 9, y + 10, 8, 8, const Color(0xFFF2B441));
+    px(c, x + 11, y + 12, 4, 4, const Color(0xFFB8741A));
+    px(c, x + 5, y + 21, 10, 2, const Color(0xFFFF8FB8));
+    px(c, x + 17, y + 21, 4, 2, const Color(0xFFFFE066));
+    px(c, x, y + 34, 4, 6, const Color(0xFF5A3A22));
+    px(c, x + 22, y + 34, 4, 6, const Color(0xFF5A3A22));
+  }
   // 비
   if (s.weather == Weather.rain) {
     for (var i = 0; i < 46; i++) {
@@ -132,7 +163,7 @@ void drawScene(Canvas c, Session s, double time) {
 }
 
 /// 손님 앞을 가리는 계산대와 천막(손님을 그린 뒤에 그린다).
-void drawShopFront(Canvas c, Session s) {
+void drawShopFront(Canvas c, Session s, [double time = 0]) {
   final look = _looks[s.progress.stage];
   final sc = Layout.scene;
   // 기둥
@@ -158,6 +189,53 @@ void drawShopFront(Canvas c, Session s) {
       px(c, x + 4, y + 8, 4, 4, flags[i % 4]);
     }
   }
+  // 천막 장식(손님 앞에 그려진다)
+  final p = s.progress;
+  if (p.hasDecor(DecorId.neon)) {
+    final on = sin(time * 3) > -0.6; // 가끔 깜빡인다
+    const board = Rect.fromLTWH(118, 58, 124, 20);
+    px(c, board.left, board.top, board.width, board.height, const Color(0xFF1B1830));
+    px(c, board.left, board.top, board.width, 2, const Color(0xFF4A4670));
+    px(c, board.left, board.bottom - 2, board.width, 2, const Color(0xFF0B0A18));
+    final glow = on ? const Color(0xFFFF6FB5) : const Color(0xFF7A3A5C);
+    final glow2 = on ? const Color(0xFFFFE066) : const Color(0xFF7A6A30);
+    // 작은 와플 그림 두 개와 가게 이름
+    for (final wx in [board.left + 6, board.right - 18]) {
+      px(c, wx, board.top + 4, 12, 12, glow2);
+      px(c, wx + 2, board.top + 6, 3, 3, const Color(0xFF1B1830));
+      px(c, wx + 7, board.top + 6, 3, 3, const Color(0xFF1B1830));
+      px(c, wx + 2, board.top + 11, 3, 3, const Color(0xFF1B1830));
+      px(c, wx + 7, board.top + 11, 3, 3, const Color(0xFF1B1830));
+    }
+    drawText(c, 'WAFFLE', board.center.dx, board.center.dy, color: glow, bold: true);
+  }
+  if (p.hasDecor(DecorId.lights)) {
+    const bulbs = [Color(0xFFFFE066), Color(0xFFFF8FB8), Color(0xFF8FE3C0), Color(0xFF8FC4FF)];
+    final beat = (time * 2).floor();
+    for (var i = 0; i < 17; i++) {
+      final x = 16 + i * 20.0, sag = (i % 2) * 2.0;
+      px(c, x - 8, sc.top + 24 + (sag == 0 ? 2 : 0), 20, 2, const Color(0xFF3A2A20));
+      final lit = (i + beat) % 3 != 0;
+      final col = bulbs[i % bulbs.length];
+      px(c, x, sc.top + 26 + sag, 4, 6, lit ? col : Color.lerp(col, ink, 0.45)!);
+      if (lit) px(c, x + 1, sc.top + 27 + sag, 2, 2, _white);
+    }
+  }
+  if (p.hasDecor(DecorId.balloons)) {
+    void balloon(double x, double y, Color col, double phase) {
+      final by = y + (sin(time * 1.6 + phase) * 2).roundToDouble();
+      px(c, x + 2, by, 8, 14, col);
+      px(c, x, by + 2, 12, 9, col);
+      px(c, x + 2, by + 2, 3, 3, Color.lerp(col, _white, 0.7)!);
+      px(c, x + 8, by + 8, 2, 4, Color.lerp(col, ink, 0.25)!);
+      px(c, x + 4, by + 14, 4, 2, Color.lerp(col, ink, 0.35)!);
+    }
+
+    balloon(3, 58, const Color(0xFFE5484D), 0);
+    balloon(17, 61, const Color(0xFFFFD23F), 1.4);
+    balloon(345, 58, const Color(0xFF5B8DEF), 2.1);
+    balloon(331, 61, const Color(0xFF58B77A), 3.3);
+  }
   // 계산대
   final ct = Layout.counter;
   px(c, 0, ct.top, ct.width, ct.height, look.counterBody);
@@ -168,6 +246,25 @@ void drawShopFront(Canvas c, Session s) {
     px(c, x, ct.top + 10, 2, ct.height - 10, look.counterLine);
   }
   px(c, 0, ct.bottom - 2, ct.width, 2, ink);
+  // 계산대 위 디저트 쇼케이스(첫 손님과 둘째 손님 사이 빈틈)
+  if (p.hasDecor(DecorId.showcase)) {
+    final x = Layout.customer(0, p.stageDef.customerSlots).right - 12;
+    final y = ct.top - 24;
+    px(c, x + 2, y, 20, 22, const Color(0x55FFFFFF));
+    px(c, x + 2, y, 20, 2, ink);
+    px(c, x + 2, y, 2, 22, ink);
+    px(c, x + 20, y, 2, 22, ink);
+    px(c, x + 5, y + 3, 2, 8, const Color(0xCCFFFFFF));
+    px(c, x + 10, y - 3, 4, 3, const Color(0xFFFFD23F));
+    // 조각 케이크
+    px(c, x + 7, y + 12, 10, 8, const Color(0xFFFFE9A0));
+    px(c, x + 7, y + 15, 10, 2, const Color(0xFFFF8FB8));
+    px(c, x + 7, y + 10, 10, 3, _white);
+    px(c, x + 11, y + 7, 3, 3, const Color(0xFFE5484D));
+    px(c, x, y + 20, 24, 4, const Color(0xFFFFD23F));
+    px(c, x, y + 22, 24, 2, const Color(0xFFB8860B));
+    px(c, x, y + 24, 24, 2, ink);
+  }
 }
 
 void drawKitchenBackground(Canvas c) {
